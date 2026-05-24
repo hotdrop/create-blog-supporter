@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -49,6 +50,7 @@ fun ArticleEditorScreen(
     onBack: () -> Unit,
     onTitleChanged: (String) -> Unit,
     onSaveTitleClick: () -> Unit,
+    onExportMarkdownClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
     onSectionClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -85,6 +87,7 @@ fun ArticleEditorScreen(
                 innerPadding = innerPadding,
                 onTitleChanged = onTitleChanged,
                 onSaveTitleClick = onSaveTitleClick,
+                onExportMarkdownClick = onExportMarkdownClick,
                 onEditOutlineClick = onEditOutlineClick,
                 onSectionClick = onSectionClick,
             )
@@ -139,6 +142,7 @@ private fun ArticleEditorContent(
     innerPadding: PaddingValues,
     onTitleChanged: (String) -> Unit,
     onSaveTitleClick: () -> Unit,
+    onExportMarkdownClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
     onSectionClick: (Long) -> Unit,
 ) {
@@ -186,6 +190,24 @@ private fun ArticleEditorContent(
             }
         }
         MessageText(message = uiState.message)
+        Button(
+            onClick = onExportMarkdownClick,
+            enabled = !uiState.isExportingMarkdown,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("articleEditor.exportMarkdownButton")
+                .semantics { contentDescription = "export_markdown" },
+        ) {
+            if (uiState.isExportingMarkdown) {
+                CircularProgressIndicator()
+            } else {
+                Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.export_markdown),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -304,6 +326,15 @@ private fun MessageText(message: ArticleEditorMessage?) {
         ArticleEditorMessage.TitleSaved -> stringResource(R.string.article_title_saved)
         ArticleEditorMessage.TitleRequired -> stringResource(R.string.article_title_required)
         ArticleEditorMessage.SaveFailed -> stringResource(R.string.article_title_save_failed)
+        ArticleEditorMessage.MarkdownExported -> stringResource(R.string.markdown_exported)
+        ArticleEditorMessage.ExportTitleRequired -> stringResource(R.string.markdown_export_title_required)
+        ArticleEditorMessage.ExportNotPhase2OrMissing -> stringResource(R.string.markdown_export_not_phase2)
+        is ArticleEditorMessage.ExportUnapprovedSections -> stringResource(
+            R.string.markdown_export_unapproved_sections,
+            message.count,
+        )
+
+        ArticleEditorMessage.ExportWriteFailed -> stringResource(R.string.markdown_export_write_failed)
     }
     if (text != null) {
         Text(
@@ -346,6 +377,7 @@ private fun ArticleEditorReadyPreview() {
             onBack = {},
             onTitleChanged = {},
             onSaveTitleClick = {},
+            onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onSectionClick = {},
         )
@@ -366,6 +398,49 @@ private fun ArticleEditorSavingMessagePreview() {
             onBack = {},
             onTitleChanged = {},
             onSaveTitleClick = {},
+            onExportMarkdownClick = {},
+            onEditOutlineClick = {},
+            onSectionClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ArticleEditorExportingPreview() {
+    CreateBlogSupporterTheme {
+        ArticleEditorScreen(
+            uiState = ArticleEditorUiState(
+                articleId = 1,
+                title = "Compose Navigation を実装から理解する",
+                sections = PreviewSections,
+                isExportingMarkdown = true,
+            ),
+            onBack = {},
+            onTitleChanged = {},
+            onSaveTitleClick = {},
+            onExportMarkdownClick = {},
+            onEditOutlineClick = {},
+            onSectionClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ArticleEditorExportBlockedPreview() {
+    CreateBlogSupporterTheme {
+        ArticleEditorScreen(
+            uiState = ArticleEditorUiState(
+                articleId = 1,
+                title = "Compose Navigation を実装から理解する",
+                sections = PreviewSections,
+                message = ArticleEditorMessage.ExportUnapprovedSections(1),
+            ),
+            onBack = {},
+            onTitleChanged = {},
+            onSaveTitleClick = {},
+            onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onSectionClick = {},
         )
@@ -381,6 +456,7 @@ private fun ArticleEditorLoadingPreview() {
             onBack = {},
             onTitleChanged = {},
             onSaveTitleClick = {},
+            onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onSectionClick = {},
         )
@@ -396,6 +472,7 @@ private fun ArticleEditorNotFoundPreview() {
             onBack = {},
             onTitleChanged = {},
             onSaveTitleClick = {},
+            onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onSectionClick = {},
         )
@@ -411,6 +488,7 @@ private fun ArticleEditorNotPhase2Preview() {
             onBack = {},
             onTitleChanged = {},
             onSaveTitleClick = {},
+            onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onSectionClick = {},
         )

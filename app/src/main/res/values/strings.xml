@@ -35,6 +35,13 @@
     <string name="save_title">タイトルを保存</string>
     <string name="article_title_saved">記事タイトルを保存しました。</string>
     <string name="article_title_save_failed">記事タイトルを保存できませんでした。</string>
+    <string name="export_markdown">Markdownを出力</string>
+    <string name="share_markdown">Markdownを共有</string>
+    <string name="markdown_exported">Markdownを出力しました。</string>
+    <string name="markdown_export_title_required">記事タイトルを保存してから出力してください。</string>
+    <string name="markdown_export_not_phase2">この記事はMarkdown出力できません。</string>
+    <string name="markdown_export_unapproved_sections">未確認の章節が%1$d件あります。全章節を確認済みにしてください。</string>
+    <string name="markdown_export_write_failed">Markdownファイルを書き込めませんでした。</string>
     <string name="outline_heading">目次</string>
     <string name="edit_outline">目次を編集</string>
     <string name="outline_empty">章節がありません。</string>

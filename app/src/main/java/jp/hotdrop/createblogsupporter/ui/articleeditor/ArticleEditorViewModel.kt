@@ -8,10 +8,16 @@ import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownResult
+import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleResult
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleUseCase
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,12 +29,16 @@ class ArticleEditorViewModel @Inject constructor(
     observeArticleDraftUseCase: ObserveArticleDraftUseCase,
     observeArticleSectionsUseCase: ObserveArticleSectionsUseCase,
     private val updatePhase2TitleUseCase: UpdatePhase2TitleUseCase,
+    private val exportMarkdownUseCase: ExportMarkdownUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
     private var hasLoadedTitle = false
 
     private val _uiState = MutableStateFlow(ArticleEditorUiState(isLoading = true))
     val uiState: StateFlow<ArticleEditorUiState> = _uiState.asStateFlow()
+
+    private val _shareEvents = MutableSharedFlow<ArticleEditorShareEvent>()
+    val shareEvents: SharedFlow<ArticleEditorShareEvent> = _shareEvents.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -128,6 +138,83 @@ class ArticleEditorViewModel @Inject constructor(
             }
         }
     }
+
+    fun onExportMarkdownClick() {
+        val current = _uiState.value
+        if (current.isExportingMarkdown) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isExportingMarkdown = true,
+                    message = null,
+                )
+            }
+            try {
+                when (val result = exportMarkdownUseCase(articleId)) {
+                    is ExportMarkdownResult.Exported -> {
+                        _uiState.update {
+                            it.copy(
+                                isExportingMarkdown = false,
+                                message = ArticleEditorMessage.MarkdownExported,
+                            )
+                        }
+                        _shareEvents.emit(
+                            ArticleEditorShareEvent.ShareMarkdown(
+                                uriString = result.file.uriString,
+                                fileName = result.file.fileName,
+                                title = result.title,
+                            ),
+                        )
+                    }
+
+                    ExportMarkdownResult.BlankTitle -> {
+                        _uiState.update {
+                            it.copy(
+                                isExportingMarkdown = false,
+                                message = ArticleEditorMessage.ExportTitleRequired,
+                            )
+                        }
+                    }
+
+                    ExportMarkdownResult.NotPhase2OrMissing -> {
+                        _uiState.update {
+                            it.copy(
+                                isExportingMarkdown = false,
+                                message = ArticleEditorMessage.ExportNotPhase2OrMissing,
+                            )
+                        }
+                    }
+
+                    is ExportMarkdownResult.UnapprovedSections -> {
+                        _uiState.update {
+                            it.copy(
+                                isExportingMarkdown = false,
+                                message = ArticleEditorMessage.ExportUnapprovedSections(result.count),
+                            )
+                        }
+                    }
+
+                    ExportMarkdownResult.WriteFailed -> {
+                        _uiState.update {
+                            it.copy(
+                                isExportingMarkdown = false,
+                                message = ArticleEditorMessage.ExportWriteFailed,
+                            )
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isExportingMarkdown = false,
+                        message = ArticleEditorMessage.ExportWriteFailed,
+                    )
+                }
+            }
+        }
+    }
 }
 
 data class ArticleEditorUiState(
@@ -136,6 +223,7 @@ data class ArticleEditorUiState(
     val sections: List<ArticleEditorSectionUiState> = emptyList(),
     val isLoading: Boolean = false,
     val isSavingTitle: Boolean = false,
+    val isExportingMarkdown: Boolean = false,
     val titleError: Boolean = false,
     val message: ArticleEditorMessage? = null,
     val error: ArticleEditorError? = null,
@@ -164,10 +252,23 @@ data class ArticleEditorSectionUiState(
     val userApproved: Boolean,
 )
 
-enum class ArticleEditorMessage {
-    TitleSaved,
-    TitleRequired,
-    SaveFailed,
+sealed interface ArticleEditorMessage {
+    data object TitleSaved : ArticleEditorMessage
+    data object TitleRequired : ArticleEditorMessage
+    data object SaveFailed : ArticleEditorMessage
+    data object MarkdownExported : ArticleEditorMessage
+    data object ExportTitleRequired : ArticleEditorMessage
+    data object ExportNotPhase2OrMissing : ArticleEditorMessage
+    data class ExportUnapprovedSections(val count: Int) : ArticleEditorMessage
+    data object ExportWriteFailed : ArticleEditorMessage
+}
+
+sealed interface ArticleEditorShareEvent {
+    data class ShareMarkdown(
+        val uriString: String,
+        val fileName: String,
+        val title: String,
+    ) : ArticleEditorShareEvent
 }
 
 enum class ArticleEditorError {
