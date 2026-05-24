@@ -21,6 +21,9 @@ description: This app's Jetpack Compose UI implementation and modification skill
 
 ## UI 品質ルール
 - 重要操作に `testTag` を付け、将来のUI検証やアクセシビリティ確認で識別できるようにする。
+- `testTag` は表示文言やリソース名に依存させず、ユーザー操作・検証対象として安定した意味の名前にする。
+- `testTag` の形式は `<screen>.<element>` を基本とし、状態やダイアログ内要素は `<screen>.<area>.<element>` とする。
+- `testTag` の例: `articleList.createButton`, `phase1Edit.generateOutlineButton`, `outlineProposal.adoptButton`。
 - クリック可能要素には `contentDescription` と適切な Semantics を付与する。
 - 再利用可能な部品は `ui/components/` に抽出し、画面固有ロジックを混ぜない。
 - レイアウト肥大化時は private Composable を分割し、1ファイルの責務を絞る。

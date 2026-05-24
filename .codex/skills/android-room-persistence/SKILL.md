@@ -10,6 +10,8 @@ description: Use when adding or modifying Room persistence, DAOs, entities, data
 - EntityはDB表現に集中させ、画面表示用の整形はUseCaseまたはUiState変換で行う。
 - Repositoryは機械的なinterface/impl分離をしない。外部SDK境界や端末機能境界など、明確な差し替え理由がある場合のみ抽象化する。
 - 複数テーブルを同時更新する操作は `@Transaction` または `RoomDatabase.withTransaction` で扱う。
+- 単一DAOで完結し、Fake DAOでもRepository/UseCase単体テストをしやすい処理は、`@Transaction`付きDAOデフォルトメソッドを優先する。
+- 複数DAO横断やDB全体のオーケストレーションが必要な場合に限り、Repositoryから `RoomDatabase.withTransaction` を使う。
 
 ## ArticleDraft / ArticleSection ルール
 - `ArticleDraft.phase` は `phase1` または `phase2` とし、`phase2` から `phase1` へ戻さない。
@@ -26,6 +28,7 @@ description: Use when adding or modifying Room persistence, DAOs, entities, data
 
 ## テストルール
 - phase遷移、章節並び替え、本文保存、自動保存、Markdown出力条件に影響するRepository/UseCaseロジックは単体テストを書く。
+- Phase1からPhase2へ遷移する採用系処理は、採用前提案を永続化しないこと、採用後の `ArticleSection` 初期値（`content` / `draftContent` / `userApproved` / `orderIndex` など）を固定して検証する。
 - DAOの複雑なクエリやtransaction更新は、Roomのテストで順序と更新対象を検証する。
 
 ## 完了チェック
