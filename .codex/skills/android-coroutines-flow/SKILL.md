@@ -23,11 +23,12 @@ description: This app utilizes Kotlin Coroutines/Flow implementation skills. The
 - 共有状態更新は `_uiState.update` に寄せて一貫性を保つ。
 
 ## テストルール
-- 成功・失敗・キャンセルの分岐を少なくとも1つずつテストする。
-- Flow の初期値、更新値、エラー値の遷移を検証する。
+- ViewModelのテストは原則作成しない。複雑な非同期ロジックはUseCase、Repository、LLM clientへ寄せてテスト可能にする。
+- 複雑な非同期ロジックでは、成功・失敗・キャンセルの分岐を少なくとも1つずつテストする。
+- UseCase、Repository、LLM clientのFlowは、初期値、更新値、エラー値の遷移を検証する。
 
 ## 完了チェック
 - 無制御なコルーチン起動がない。
 - キャンセルと例外が正しく扱われる。
 - Job 競合が制御される。
-- 非同期分岐のテストが追加または更新される。
+- 複雑な非同期分岐がUseCase、Repository、LLM clientにある場合、該当レイヤーのテストが追加または更新される。

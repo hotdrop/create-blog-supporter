@@ -1,6 +1,6 @@
 ---
 name: feedback-loop
-description: After every implementation or development task, append development-improvement feedback to `task/feedback.md`. Do not replace or delete existing entries. In the final chat report, only state briefly that feedback was appended; do not duplicate the full feedback text.
+description: After every implementation or development task, append development-improvement feedback to `task/Feedback.md`. Do not replace or delete existing entries. In the final chat report, only state briefly that feedback was appended; do not duplicate the full feedback text.
 ---
 
 # Post-Task Development Feedback
@@ -37,6 +37,6 @@ Use this format:
 - Treat "rules" as both `AGENTS.md` and this `SKILL.md`, plus any files referenced from them.
 - Also consider broader development improvements, including `docs/`, README files, task notes, tests, fixtures, verification steps, local setup, and developer workflow.
 - Classify each candidate as task-specific or permanent.
-- Task-specific candidates usually belong in this `SKILL.md`, `docs/`, README, `task/`, tests, or verification notes.
+- Task-specific candidates usually belong in this `SKILL.md`, `docs/`, README, `task/Feedback.md`, tests, or verification notes.
 - Permanent candidates usually belong in `AGENTS.md` or a rule file referenced from it.
 - Do not update rule or documentation files from feedback unless the user explicitly approves that update.
