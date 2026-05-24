@@ -1,12 +1,14 @@
 package jp.hotdrop.createblogsupporter.data.local
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
+import jp.hotdrop.createblogsupporter.domain.model.ArticleSectionMoveDirection
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -24,14 +26,26 @@ interface ArticleDao {
     @Query("SELECT * FROM article_sections WHERE articleId = :articleId ORDER BY orderIndex ASC")
     suspend fun getArticleSections(articleId: Long): List<ArticleSectionEntity>
 
+    @Query("SELECT * FROM article_sections WHERE articleId = :articleId ORDER BY orderIndex ASC")
+    fun observeArticleSections(articleId: Long): Flow<List<ArticleSectionEntity>>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertArticleDraft(articleDraft: ArticleDraftEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertArticleSection(articleSection: ArticleSectionEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertArticleSections(articleSections: List<ArticleSectionEntity>)
 
     @Update
     suspend fun updateArticleDraft(articleDraft: ArticleDraftEntity)
+
+    @Update
+    suspend fun updateArticleSection(articleSection: ArticleSectionEntity)
+
+    @Delete
+    suspend fun deleteArticleSection(articleSection: ArticleSectionEntity)
 
     @Transaction
     suspend fun adoptOutlineProposal(
@@ -71,4 +85,154 @@ interface ArticleDao {
         )
         return true
     }
+
+    @Transaction
+    suspend fun updatePhase2Title(
+        articleId: Long,
+        title: String,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        updateArticleDraft(
+            current.copy(
+                title = title,
+                updatedAt = nowMillis,
+            ),
+        )
+        return true
+    }
+
+    @Transaction
+    suspend fun addArticleSection(
+        articleId: Long,
+        heading: String,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val nextOrderIndex = getArticleSections(articleId).maxOfOrNull { it.orderIndex }?.plus(1) ?: 0
+        insertArticleSection(
+            ArticleSectionEntity(
+                articleId = articleId,
+                heading = heading,
+                orderIndex = nextOrderIndex,
+                content = "",
+                draftContent = "",
+                proofreadStatus = ProofreadStatus.Unchecked,
+                proofreadMessage = null,
+                userApproved = false,
+                createdAt = nowMillis,
+                updatedAt = nowMillis,
+                lastSavedAt = null,
+                draftUpdatedAt = null,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun updateArticleSectionHeading(
+        articleId: Long,
+        sectionId: Long,
+        heading: String,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val section = getArticleSections(articleId).firstOrNull { it.id == sectionId } ?: return false
+        updateArticleSection(
+            section.copy(
+                heading = heading,
+                updatedAt = nowMillis,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun deleteArticleSection(
+        articleId: Long,
+        sectionId: Long,
+        nowMillis: Long,
+    ): DeleteArticleSectionDaoResult {
+        val current = getArticleDraft(articleId) ?: return DeleteArticleSectionDaoResult.NotFoundOrNotPhase2
+        if (current.phase != ArticlePhase.Phase2) {
+            return DeleteArticleSectionDaoResult.NotFoundOrNotPhase2
+        }
+        val sections = getArticleSections(articleId)
+        if (sections.size <= 1) {
+            return DeleteArticleSectionDaoResult.LastSection
+        }
+        val section = sections.firstOrNull { it.id == sectionId }
+            ?: return DeleteArticleSectionDaoResult.NotFoundOrNotPhase2
+        deleteArticleSection(section)
+        sections
+            .filterNot { it.id == sectionId }
+            .sortedBy { it.orderIndex }
+            .forEachIndexed { index, remainingSection ->
+                if (remainingSection.orderIndex != index) {
+                    updateArticleSection(
+                        remainingSection.copy(
+                            orderIndex = index,
+                            updatedAt = nowMillis,
+                        ),
+                    )
+                }
+            }
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return DeleteArticleSectionDaoResult.Deleted
+    }
+
+    @Transaction
+    suspend fun moveArticleSection(
+        articleId: Long,
+        sectionId: Long,
+        direction: ArticleSectionMoveDirection,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val sections = getArticleSections(articleId)
+        val currentIndex = sections.indexOfFirst { it.id == sectionId }
+        if (currentIndex == -1) {
+            return false
+        }
+        val targetIndex = when (direction) {
+            ArticleSectionMoveDirection.Up -> currentIndex - 1
+            ArticleSectionMoveDirection.Down -> currentIndex + 1
+        }
+        val target = sections.getOrNull(targetIndex) ?: return false
+        val moving = sections[currentIndex]
+        updateArticleSection(
+            moving.copy(
+                orderIndex = target.orderIndex,
+                updatedAt = nowMillis,
+            ),
+        )
+        updateArticleSection(
+            target.copy(
+                orderIndex = moving.orderIndex,
+                updatedAt = nowMillis,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+}
+
+enum class DeleteArticleSectionDaoResult {
+    Deleted,
+    LastSection,
+    NotFoundOrNotPhase2,
 }

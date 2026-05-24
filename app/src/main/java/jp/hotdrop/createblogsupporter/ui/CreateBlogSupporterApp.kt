@@ -6,9 +6,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import jp.hotdrop.createblogsupporter.ui.articleentry.ArticleEntryRoute
 import jp.hotdrop.createblogsupporter.ui.articlelist.ArticleListRoute
 import jp.hotdrop.createblogsupporter.ui.articlememo.ArticleMemoRoute
 import jp.hotdrop.createblogsupporter.ui.navigation.AppDestination
+import jp.hotdrop.createblogsupporter.ui.outlineedit.OutlineEditRoute
 import jp.hotdrop.createblogsupporter.ui.outlineproposal.OutlineProposalRoute
 import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 
@@ -41,11 +43,14 @@ fun CreateBlogSupporterApp() {
                 route = AppDestination.EditArticlePattern,
                 arguments = listOf(navArgument("articleId") { type = NavType.LongType }),
             ) {
-                ArticleMemoRoute(
+                ArticleEntryRoute(
                     onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
+                    onPhase1Saved = { navController.popBackStack() },
                     onGenerateOutline = { articleId ->
                         navController.navigate(AppDestination.outlineProposals(articleId))
+                    },
+                    onEditOutline = { articleId ->
+                        navController.navigate(AppDestination.outlineEdit(articleId))
                     },
                 )
             }
@@ -55,12 +60,21 @@ fun CreateBlogSupporterApp() {
             ) {
                 OutlineProposalRoute(
                     onBack = { navController.popBackStack() },
-                    onAdopted = {
-                        navController.popBackStack(
-                            route = AppDestination.ArticleList,
-                            inclusive = false,
-                        )
+                    onAdopted = { articleId ->
+                        navController.navigate(AppDestination.editArticle(articleId)) {
+                            popUpTo(AppDestination.ArticleList) {
+                                inclusive = false
+                            }
+                        }
                     },
+                )
+            }
+            composable(
+                route = AppDestination.OutlineEditPattern,
+                arguments = listOf(navArgument("articleId") { type = NavType.LongType }),
+            ) {
+                OutlineEditRoute(
+                    onBack = { navController.popBackStack() },
                 )
             }
         }
