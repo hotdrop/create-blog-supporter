@@ -1,7 +1,6 @@
 # AGENTS.md
 
 Android ネイティブ開発における共通運用ルールを定義する。
-詳細実装手順は `skills/*/SKILL.md` に委譲し、本書は全体統制のみを扱う。
 
 ## このアプリの目的
 
@@ -39,8 +38,3 @@ LLMは本文生成の主体ではなく、構成、提案、校正を支援す�
   - それ以外のレイヤー(Model, UseCase, Repository等)で複雑なロジックがある場合はテストコードを書く
 - 例外は握りつぶさず、ユーザー向け表示とログを分離する
 - 実装後、既存のユニットテストは必ず実施する。
-
-## SKILL 用途マトリクス
-- UI 実装・改修: `android-compose-ui`
-- Coroutines/Flow 設計・改修: `android-coroutines-flow`
-- フィードバック: `feedback-loop`
