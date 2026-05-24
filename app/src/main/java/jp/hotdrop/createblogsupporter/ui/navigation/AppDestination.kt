@@ -5,8 +5,11 @@ object AppDestination {
     const val NewArticle = "article/new"
     const val EditArticlePattern = "article/{articleId}"
     const val OutlineProposalsPattern = "article/{articleId}/outline-proposals"
+    const val OutlineEditPattern = "article/{articleId}/outline-edit"
 
     fun editArticle(articleId: Long): String = "article/$articleId"
 
     fun outlineProposals(articleId: Long): String = "article/$articleId/outline-proposals"
+
+    fun outlineEdit(articleId: Long): String = "article/$articleId/outline-edit"
 }

@@ -8,14 +8,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun OutlineProposalRoute(
     onBack: () -> Unit,
-    onAdopted: () -> Unit,
+    onAdopted: (Long) -> Unit,
     viewModel: OutlineProposalViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
-        viewModel.adoptedEvent.collect {
-            onAdopted()
+        viewModel.adoptedEvent.collect { articleId ->
+            onAdopted(articleId)
         }
     }
 

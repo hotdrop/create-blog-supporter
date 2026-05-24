@@ -18,6 +18,11 @@ enum class ProofreadStatus(val storageValue: String) {
     Error("error"),
 }
 
+enum class ArticleSectionMoveDirection {
+    Up,
+    Down,
+}
+
 data class ArticleDraft(
     val id: Long,
     val phase: ArticlePhase,

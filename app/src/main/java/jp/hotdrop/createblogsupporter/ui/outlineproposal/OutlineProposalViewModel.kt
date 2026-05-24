@@ -34,8 +34,8 @@ class OutlineProposalViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OutlineProposalUiState(isLoading = true))
     val uiState: StateFlow<OutlineProposalUiState> = _uiState.asStateFlow()
 
-    private val _adoptedEvent = MutableSharedFlow<Unit>()
-    val adoptedEvent: SharedFlow<Unit> = _adoptedEvent.asSharedFlow()
+    private val _adoptedEvent = MutableSharedFlow<Long>()
+    val adoptedEvent: SharedFlow<Long> = _adoptedEvent.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -102,7 +102,7 @@ class OutlineProposalViewModel @Inject constructor(
             ) {
                 AdoptOutlineProposalResult.Adopted -> {
                     _uiState.update { it.copy(isAdopting = false) }
-                    _adoptedEvent.emit(Unit)
+                    _adoptedEvent.emit(articleId)
                 }
 
                 AdoptOutlineProposalResult.InvalidProposal -> showInvalidProposal()
