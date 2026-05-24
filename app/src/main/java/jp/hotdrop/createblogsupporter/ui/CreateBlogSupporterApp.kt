@@ -12,6 +12,7 @@ import jp.hotdrop.createblogsupporter.ui.articlememo.ArticleMemoRoute
 import jp.hotdrop.createblogsupporter.ui.navigation.AppDestination
 import jp.hotdrop.createblogsupporter.ui.outlineedit.OutlineEditRoute
 import jp.hotdrop.createblogsupporter.ui.outlineproposal.OutlineProposalRoute
+import jp.hotdrop.createblogsupporter.ui.sectioneditor.SectionEditorRoute
 import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 
 @Composable
@@ -52,6 +53,9 @@ fun CreateBlogSupporterApp() {
                     onEditOutline = { articleId ->
                         navController.navigate(AppDestination.outlineEdit(articleId))
                     },
+                    onEditSection = { articleId, sectionId ->
+                        navController.navigate(AppDestination.sectionEdit(articleId, sectionId))
+                    },
                 )
             }
             composable(
@@ -74,6 +78,17 @@ fun CreateBlogSupporterApp() {
                 arguments = listOf(navArgument("articleId") { type = NavType.LongType }),
             ) {
                 OutlineEditRoute(
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = AppDestination.SectionEditPattern,
+                arguments = listOf(
+                    navArgument("articleId") { type = NavType.LongType },
+                    navArgument("sectionId") { type = NavType.LongType },
+                ),
+            ) {
+                SectionEditorRoute(
                     onBack = { navController.popBackStack() },
                 )
             }

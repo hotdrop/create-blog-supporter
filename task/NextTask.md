@@ -21,14 +21,14 @@
   - 章節の追加・削除・並び替え・見出し変更を実装する。
   - `orderIndex` を唯一の表示順として扱う。
   - 保存済み本文 `content` と編集中本文 `draftContent` の分離を崩さない。
-
-## 未着手のタスク
-
-- [ ] **Task 4: 章節本文編集**
+- [x] **Task 4: 章節本文編集**
   - `content` と `draftContent` を明確に分離した章節編集画面を作る。
   - 自動保存は `draftContent` のみに行う。
   - 保存ボタン経由でのみ `content` を更新する。
   - 保存済みに戻す操作と簡易比較表示を実装する。
+
+## 未着手のタスク
+
 - [ ] **Task 5: Markdown出力**
   - タイトル入力済み、`phase2`、全章節 `userApproved=true` の場合のみ出力可能にする。
   - 出力本文には `content` のみを使い、`draftContent` は混ぜない。

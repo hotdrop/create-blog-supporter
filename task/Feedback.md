@@ -18,3 +18,24 @@
 - AGENTS.md: 恒久ルールの変更は不要。
 - .codex/skills/md-doc-viewer/SKILL.md: 該当なし。
 - docs/README/task/tests など: `task/NextTask.md` のTask 4に「記事編集画面の章節タップから章節本文編集画面へ遷移」を追記する候補あり。
+
+# 2026/5/24 19:11 フィードバック
+
+## 作業内容
+- Task 4として、章節本文編集画面、章節タップ導線、本文自動保存、確定保存、保存済みへのリセット、確認済み切り替え、簡易比較表示を実装した。
+- `content` と `draftContent` の更新経路をUseCase/Repository/DAO transactionで分離し、Repository/UseCase単体テストを追加した。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: `content` 更新経路の制限が明確だったため実装判断は安定したが、保存ボタン押下前に保留中の自動保存をどう扱うかは計画段階で明文化されていなかった。
+- 改善した方がよいルール・手順: 自動保存つき編集画面では、明示保存時に未反映のローカル入力を先に永続化するかをタスク計画に含めるとよい。
+- 追加した方がよいルール・手順: 比較表示の粒度（行単位/段落単位）と、保存後に `userApproved` を解除する条件をAcceptance Criteriaとして固定すると実装漏れを防げる。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: Task 5ではMarkdown出力が `content` のみを読むことを、Task 4で追加した確認済みスイッチと結びつけたUI確認観点として明記するとよい。
+
+## 分類
+- タスク固有: Task 5の出力条件確認、章節編集画面からの確認済み状態変更後のMarkdown可否テスト。
+- 恒久対応候補: 自動保存画面の明示保存時の競合処理を、Compose/Flow系の実装ルールに短く追加する候補あり。
+
+## 更新先候補
+- AGENTS.md: 現時点で恒久ルールの追加は必須ではない。既存の `content` / `draftContent` 分離ルールで今回の実装はカバーできる。
+- .codex/skills/md-doc-viewer/SKILL.md: 該当なし。
+- docs/README/task/tests など: `task/NextTask.md` はTask 4完了に更新済み。Task 5着手前にMarkdown出力条件のテスト観点を追記する候補あり。
