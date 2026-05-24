@@ -4,12 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
+import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
 import jp.hotdrop.createblogsupporter.domain.model.OutlineProposal
+import jp.hotdrop.createblogsupporter.domain.model.OutlineProposalRequest
 import jp.hotdrop.createblogsupporter.domain.model.TitleProposal
+import jp.hotdrop.createblogsupporter.domain.model.TitleProposalRequest
 import jp.hotdrop.createblogsupporter.domain.usecase.AdoptOutlineProposalResult
 import jp.hotdrop.createblogsupporter.domain.usecase.AdoptOutlineProposalUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.GenerateOutlineProposalStubUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.GenerateOutlineProposalsUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.GenerateTitleProposalsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +30,8 @@ import javax.inject.Inject
 class OutlineProposalViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     observeArticleDraftUseCase: ObserveArticleDraftUseCase,
-    private val generateOutlineProposalStubUseCase: GenerateOutlineProposalStubUseCase,
+    private val generateTitleProposalsUseCase: GenerateTitleProposalsUseCase,
+    private val generateOutlineProposalsUseCase: GenerateOutlineProposalsUseCase,
     private val adoptOutlineProposalUseCase: AdoptOutlineProposalUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
@@ -61,17 +67,7 @@ class OutlineProposalViewModel @Inject constructor(
 
                     !hasGeneratedProposal -> {
                         hasGeneratedProposal = true
-                        val proposalSet = generateOutlineProposalStubUseCase(article)
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                titleProposals = proposalSet.titleProposals,
-                                outlineProposals = proposalSet.outlineProposals,
-                                selectedTitleId = proposalSet.titleProposals.firstOrNull()?.id,
-                                selectedOutlineId = proposalSet.outlineProposals.firstOrNull()?.id,
-                                error = null,
-                            )
-                        }
+                        updateGeneratedProposals(article)
                     }
                 }
             }
@@ -126,6 +122,55 @@ class OutlineProposalViewModel @Inject constructor(
             )
         }
     }
+
+    private fun updateGeneratedProposals(article: ArticleDraft) {
+        val titleProposals = when (
+            val result = generateTitleProposalsUseCase(
+                TitleProposalRequest(
+                    topic = article.topic,
+                    detail = article.detail,
+                ),
+            )
+        ) {
+            is LlmSupportResult.Success -> result.value
+            is LlmSupportResult.Failure -> return showGenerationFailed()
+        }
+        val outlineProposals = when (
+            val result = generateOutlineProposalsUseCase(
+                OutlineProposalRequest(
+                    topic = article.topic,
+                    detail = article.detail,
+                ),
+            )
+        ) {
+            is LlmSupportResult.Success -> result.value
+            is LlmSupportResult.Failure -> return showGenerationFailed()
+        }
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                titleProposals = titleProposals,
+                outlineProposals = outlineProposals,
+                selectedTitleId = titleProposals.firstOrNull()?.id,
+                selectedOutlineId = outlineProposals.firstOrNull()?.id,
+                message = null,
+                error = null,
+            )
+        }
+    }
+
+    private fun showGenerationFailed() {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                titleProposals = emptyList(),
+                outlineProposals = emptyList(),
+                selectedTitleId = null,
+                selectedOutlineId = null,
+                message = OutlineProposalMessage.GenerationFailed,
+            )
+        }
+    }
 }
 
 data class OutlineProposalUiState(
@@ -148,6 +193,7 @@ data class OutlineProposalUiState(
 enum class OutlineProposalMessage {
     SelectProposal,
     AdoptFailed,
+    GenerationFailed,
 }
 
 enum class OutlineProposalError {
