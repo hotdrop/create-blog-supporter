@@ -50,7 +50,7 @@ fun ArticleEditorScreen(
     onTitleChanged: (String) -> Unit,
     onSaveTitleClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
-    onSectionClick: () -> Unit,
+    onSectionClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -140,7 +140,7 @@ private fun ArticleEditorContent(
     onTitleChanged: (String) -> Unit,
     onSaveTitleClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
-    onSectionClick: () -> Unit,
+    onSectionClick: (Long) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -224,7 +224,7 @@ private fun ArticleEditorContent(
             uiState.sections.forEach { section ->
                 ArticleEditorSectionCard(
                     section = section,
-                    onClick = onSectionClick,
+                    onClick = { onSectionClick(section.id) },
                 )
             }
         }
@@ -251,7 +251,8 @@ private fun ArticleEditorSectionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .testTag("articleEditor.sectionCard.${section.id}"),
         shape = RoundedCornerShape(8.dp),
     ) {
         Column(
@@ -303,7 +304,6 @@ private fun MessageText(message: ArticleEditorMessage?) {
         ArticleEditorMessage.TitleSaved -> stringResource(R.string.article_title_saved)
         ArticleEditorMessage.TitleRequired -> stringResource(R.string.article_title_required)
         ArticleEditorMessage.SaveFailed -> stringResource(R.string.article_title_save_failed)
-        ArticleEditorMessage.SectionEditNotImplemented -> stringResource(R.string.section_edit_not_implemented)
     }
     if (text != null) {
         Text(

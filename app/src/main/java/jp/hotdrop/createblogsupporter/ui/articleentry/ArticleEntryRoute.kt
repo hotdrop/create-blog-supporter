@@ -38,6 +38,7 @@ fun ArticleEntryRoute(
     onPhase1Saved: () -> Unit,
     onGenerateOutline: (Long) -> Unit,
     onEditOutline: (Long) -> Unit,
+    onEditSection: (Long, Long) -> Unit,
     viewModel: ArticleEntryViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,6 +57,7 @@ fun ArticleEntryRoute(
                 ArticlePhase.Phase2 -> ArticleEditorRoute(
                     onBack = onBack,
                     onEditOutline = onEditOutline,
+                    onEditSection = onEditSection,
                 )
             }
         }

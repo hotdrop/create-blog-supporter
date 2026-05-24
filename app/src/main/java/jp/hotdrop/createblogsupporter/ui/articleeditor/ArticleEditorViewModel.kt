@@ -128,10 +128,6 @@ class ArticleEditorViewModel @Inject constructor(
             }
         }
     }
-
-    fun onSectionClick() {
-        _uiState.update { it.copy(message = ArticleEditorMessage.SectionEditNotImplemented) }
-    }
 }
 
 data class ArticleEditorUiState(
@@ -172,7 +168,6 @@ enum class ArticleEditorMessage {
     TitleSaved,
     TitleRequired,
     SaveFailed,
-    SectionEditNotImplemented,
 }
 
 enum class ArticleEditorError {

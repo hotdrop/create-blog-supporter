@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun ArticleEditorRoute(
     onBack: () -> Unit,
     onEditOutline: (Long) -> Unit,
+    onEditSection: (Long, Long) -> Unit,
     viewModel: ArticleEditorViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -20,6 +21,10 @@ fun ArticleEditorRoute(
         onEditOutlineClick = { articleId ->
             onEditOutline(articleId)
         },
-        onSectionClick = viewModel::onSectionClick,
+        onSectionClick = { sectionId ->
+            uiState.value.articleId?.let { articleId ->
+                onEditSection(articleId, sectionId)
+            }
+        },
     )
 }

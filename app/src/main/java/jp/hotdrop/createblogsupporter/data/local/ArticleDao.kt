@@ -29,6 +29,9 @@ interface ArticleDao {
     @Query("SELECT * FROM article_sections WHERE articleId = :articleId ORDER BY orderIndex ASC")
     fun observeArticleSections(articleId: Long): Flow<List<ArticleSectionEntity>>
 
+    @Query("SELECT * FROM article_sections WHERE articleId = :articleId AND id = :sectionId")
+    fun observeArticleSection(articleId: Long, sectionId: Long): Flow<ArticleSectionEntity?>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertArticleDraft(articleDraft: ArticleDraftEntity): Long
 
@@ -223,6 +226,96 @@ interface ArticleDao {
         updateArticleSection(
             target.copy(
                 orderIndex = moving.orderIndex,
+                updatedAt = nowMillis,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun updateArticleSectionDraftContent(
+        articleId: Long,
+        sectionId: Long,
+        draftContent: String,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val section = getArticleSections(articleId).firstOrNull { it.id == sectionId } ?: return false
+        updateArticleSection(
+            section.copy(
+                draftContent = draftContent,
+                updatedAt = nowMillis,
+                draftUpdatedAt = nowMillis,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun saveArticleSectionContent(
+        articleId: Long,
+        sectionId: Long,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val section = getArticleSections(articleId).firstOrNull { it.id == sectionId } ?: return false
+        updateArticleSection(
+            section.copy(
+                content = section.draftContent,
+                userApproved = false,
+                updatedAt = nowMillis,
+                lastSavedAt = nowMillis,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun resetArticleSectionDraftToSaved(
+        articleId: Long,
+        sectionId: Long,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val section = getArticleSections(articleId).firstOrNull { it.id == sectionId } ?: return false
+        updateArticleSection(
+            section.copy(
+                draftContent = section.content,
+                updatedAt = nowMillis,
+                draftUpdatedAt = nowMillis,
+            ),
+        )
+        updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun updateArticleSectionUserApproved(
+        articleId: Long,
+        sectionId: Long,
+        userApproved: Boolean,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        val section = getArticleSections(articleId).firstOrNull { it.id == sectionId } ?: return false
+        updateArticleSection(
+            section.copy(
+                userApproved = userApproved,
                 updatedAt = nowMillis,
             ),
         )

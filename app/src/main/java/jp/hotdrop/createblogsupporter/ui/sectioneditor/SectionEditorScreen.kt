@@ -1,0 +1,525 @@
+package jp.hotdrop.createblogsupporter.ui.sectioneditor
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import jp.hotdrop.createblogsupporter.R
+import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SectionEditorScreen(
+    uiState: SectionEditorUiState,
+    onBack: () -> Unit,
+    onDraftContentChanged: (String) -> Unit,
+    onSaveContentClick: () -> Unit,
+    onResetDraftClick: () -> Unit,
+    onUserApprovedChanged: (Boolean) -> Unit,
+    onToggleComparisonClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text(text = stringResource(R.string.section_editor_title)) },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = "navigate_back" },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.navigate_back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        when {
+            uiState.isLoading -> LoadingContent(innerPadding)
+            uiState.error != null -> ErrorContent(
+                innerPadding = innerPadding,
+                error = uiState.error,
+                onBack = onBack,
+            )
+
+            else -> SectionEditorContent(
+                uiState = uiState,
+                innerPadding = innerPadding,
+                onDraftContentChanged = onDraftContentChanged,
+                onSaveContentClick = onSaveContentClick,
+                onResetDraftClick = onResetDraftClick,
+                onUserApprovedChanged = onUserApprovedChanged,
+                onToggleComparisonClick = onToggleComparisonClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingContent(innerPadding: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorContent(
+    innerPadding: PaddingValues,
+    error: SectionEditorError,
+    onBack: () -> Unit,
+) {
+    val message = when (error) {
+        SectionEditorError.NotFound -> stringResource(R.string.unknown_article)
+        SectionEditorError.NotPhase2 -> stringResource(R.string.article_editor_not_phase2)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedButton(onClick = onBack) {
+            Text(text = stringResource(R.string.navigate_back))
+        }
+    }
+}
+
+@Composable
+private fun SectionEditorContent(
+    uiState: SectionEditorUiState,
+    innerPadding: PaddingValues,
+    onDraftContentChanged: (String) -> Unit,
+    onSaveContentClick: () -> Unit,
+    onResetDraftClick: () -> Unit,
+    onUserApprovedChanged: (Boolean) -> Unit,
+    onToggleComparisonClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = stringResource(
+                R.string.section_editor_heading_format,
+                uiState.orderIndex + 1,
+                uiState.heading,
+            ),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        StatusRow(uiState = uiState)
+        MessageText(message = uiState.message)
+        SavedContent(content = uiState.content)
+        OutlinedTextField(
+            value = uiState.draftContent,
+            onValueChange = onDraftContentChanged,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.draftInput")
+                .semantics { contentDescription = "section_draft_content_input" },
+            label = { Text(text = stringResource(R.string.section_draft_content_label)) },
+            minLines = 10,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Button(
+                onClick = onSaveContentClick,
+                enabled = !uiState.isSavingContent,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("sectionEditor.saveButton")
+                    .semantics { contentDescription = "save_section_content" },
+            ) {
+                if (uiState.isSavingContent) {
+                    CircularProgressIndicator()
+                } else {
+                    Icon(imageVector = Icons.Default.Save, contentDescription = null)
+                    Text(
+                        text = stringResource(R.string.save_section_content),
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+            OutlinedButton(
+                onClick = onResetDraftClick,
+                enabled = !uiState.isResettingDraft,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("sectionEditor.resetButton")
+                    .semantics { contentDescription = "reset_section_draft" },
+            ) {
+                if (uiState.isResettingDraft) {
+                    CircularProgressIndicator()
+                } else {
+                    Icon(imageVector = Icons.Default.Restore, contentDescription = null)
+                    Text(
+                        text = stringResource(R.string.reset_section_draft),
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.section_user_approved),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Switch(
+                checked = uiState.userApproved,
+                onCheckedChange = onUserApprovedChanged,
+                enabled = !uiState.isUpdatingApproval,
+                modifier = Modifier
+                    .testTag("sectionEditor.approvedSwitch")
+                    .semantics { contentDescription = "section_user_approved_switch" },
+            )
+        }
+        OutlinedButton(
+            onClick = onToggleComparisonClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.compareButton")
+                .semantics { contentDescription = "toggle_section_comparison" },
+        ) {
+            Icon(imageVector = Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null)
+            Text(
+                text = if (uiState.showComparison) {
+                    stringResource(R.string.hide_section_comparison)
+                } else {
+                    stringResource(R.string.show_section_comparison)
+                },
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        if (uiState.showComparison) {
+            ComparisonContent(rows = uiState.comparisonRows)
+        }
+    }
+}
+
+@Composable
+private fun StatusRow(uiState: SectionEditorUiState) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        AssistChip(
+            onClick = {},
+            label = {
+                Text(
+                    text = if (uiState.hasUnsavedChanges) {
+                        stringResource(R.string.section_has_unsaved_changes)
+                    } else {
+                        stringResource(R.string.section_no_unsaved_changes)
+                    },
+                )
+            },
+        )
+        if (uiState.isAutoSavingDraft) {
+            AssistChip(
+                onClick = {},
+                label = { Text(text = stringResource(R.string.section_auto_saving)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SavedContent(content: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.section_saved_content_label),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Card(shape = RoundedCornerShape(8.dp)) {
+            Text(
+                text = content.ifBlank { stringResource(R.string.section_saved_content_empty) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ComparisonContent(rows: List<SectionComparisonRow>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("sectionEditor.comparison"),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.section_comparison_heading),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        rows.forEachIndexed { index, row ->
+            ComparisonRow(
+                lineNumber = index + 1,
+                row = row,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ComparisonRow(
+    lineNumber: Int,
+    row: SectionComparisonRow,
+) {
+    val containerColor = when (row.type) {
+        SectionComparisonType.Unchanged -> MaterialTheme.colorScheme.surfaceVariant
+        SectionComparisonType.Added -> MaterialTheme.colorScheme.primaryContainer
+        SectionComparisonType.Deleted -> MaterialTheme.colorScheme.errorContainer
+        SectionComparisonType.Changed -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+    val label = when (row.type) {
+        SectionComparisonType.Unchanged -> stringResource(R.string.section_comparison_unchanged)
+        SectionComparisonType.Added -> stringResource(R.string.section_comparison_added)
+        SectionComparisonType.Deleted -> stringResource(R.string.section_comparison_deleted)
+        SectionComparisonType.Changed -> stringResource(R.string.section_comparison_changed)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = containerColor,
+                shape = RoundedCornerShape(8.dp),
+            )
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.section_comparison_line_format, lineNumber, label),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        Text(
+            text = stringResource(R.string.section_comparison_saved_format, row.savedText.ifBlank { "-" }),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Text(
+            text = stringResource(R.string.section_comparison_draft_format, row.draftText.ifBlank { "-" }),
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+@Composable
+private fun MessageText(message: SectionEditorMessage?) {
+    val text = when (message) {
+        null -> null
+        SectionEditorMessage.DraftAutoSaved -> stringResource(R.string.section_draft_auto_saved)
+        SectionEditorMessage.ContentSaved -> stringResource(R.string.section_content_saved_message)
+        SectionEditorMessage.DraftReset -> stringResource(R.string.section_draft_reset_message)
+        SectionEditorMessage.MarkedApproved -> stringResource(R.string.section_marked_approved)
+        SectionEditorMessage.MarkedUnapproved -> stringResource(R.string.section_marked_unapproved)
+        SectionEditorMessage.OperationFailed -> stringResource(R.string.section_operation_failed)
+    }
+    if (text != null) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private val PreviewState = SectionEditorUiState(
+    heading = "背景と解決したかったこと",
+    orderIndex = 0,
+    content = "保存済み本文です。\nここまではユーザーが確認済みです。",
+    draftContent = "保存済み本文です。\nここに追記中です。",
+    userApproved = false,
+)
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorReadyPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState,
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorLoadingPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = SectionEditorUiState(isLoading = true),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorNotFoundPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = SectionEditorUiState(error = SectionEditorError.NotFound),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorNotPhase2Preview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = SectionEditorUiState(error = SectionEditorError.NotPhase2),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorSavingPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(isSavingContent = true),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorAutoSavingPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(isAutoSavingDraft = true),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorComparisonPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(showComparison = true),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorEmptyContentPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = SectionEditorUiState(
+                heading = "まとめ",
+                orderIndex = 2,
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+        )
+    }
+}

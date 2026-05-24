@@ -9,6 +9,8 @@ import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSectionMoveDirection
 import jp.hotdrop.createblogsupporter.domain.model.ArticleStatus
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadStatus
+import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
+import jp.hotdrop.createblogsupporter.domain.usecase.SaveArticleSectionContentUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleResult
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleUseCase
 import kotlinx.coroutines.flow.Flow
@@ -264,6 +266,169 @@ class ArticleRepositoryTest {
         assertEquals("既存タイトル", dao.getArticleDraft(articleId)?.title)
     }
 
+    @Test
+    fun updateArticleSectionDraftContent_updatesOnlyDraftContent() = runBlocking {
+        val dao = FakeArticleDao()
+        val articleId = dao.insertArticleDraft(phase2Article())
+        dao.insertArticleSections(
+            listOf(
+                section(
+                    articleId = articleId,
+                    heading = "背景",
+                    orderIndex = 0,
+                    content = "保存済み本文",
+                    draftContent = "古い下書き",
+                    userApproved = true,
+                ),
+            ),
+        )
+        val sectionId = dao.getArticleSections(articleId).single().id
+        val repository = ArticleRepository(dao)
+
+        val updated = repository.updateArticleSectionDraftContent(
+            articleId = articleId,
+            sectionId = sectionId,
+            draftContent = "新しい下書き",
+            nowMillis = 400,
+        )
+
+        val section = dao.getArticleSections(articleId).single()
+        assertTrue(updated)
+        assertEquals("保存済み本文", section.content)
+        assertEquals("新しい下書き", section.draftContent)
+        assertTrue(section.userApproved)
+        assertEquals(400L, section.draftUpdatedAt)
+        assertEquals(null, section.lastSavedAt)
+    }
+
+    @Test
+    fun saveArticleSectionContent_copiesDraftToContentAndClearsApproval() = runBlocking {
+        val dao = FakeArticleDao()
+        val articleId = dao.insertArticleDraft(phase2Article())
+        dao.insertArticleSections(
+            listOf(
+                section(
+                    articleId = articleId,
+                    heading = "背景",
+                    orderIndex = 0,
+                    content = "保存済み本文",
+                    draftContent = "保存する下書き",
+                    userApproved = true,
+                ),
+            ),
+        )
+        val sectionId = dao.getArticleSections(articleId).single().id
+        val repository = ArticleRepository(dao)
+
+        val saved = repository.saveArticleSectionContent(
+            articleId = articleId,
+            sectionId = sectionId,
+            nowMillis = 500,
+        )
+
+        val section = dao.getArticleSections(articleId).single()
+        assertTrue(saved)
+        assertEquals("保存する下書き", section.content)
+        assertEquals("保存する下書き", section.draftContent)
+        assertFalse(section.userApproved)
+        assertEquals(500L, section.lastSavedAt)
+    }
+
+    @Test
+    fun resetArticleSectionDraftToSaved_keepsContentAndCopiesItToDraft() = runBlocking {
+        val dao = FakeArticleDao()
+        val articleId = dao.insertArticleDraft(phase2Article())
+        dao.insertArticleSections(
+            listOf(
+                section(
+                    articleId = articleId,
+                    heading = "背景",
+                    orderIndex = 0,
+                    content = "保存済み本文",
+                    draftContent = "破棄する下書き",
+                    userApproved = true,
+                ),
+            ),
+        )
+        val sectionId = dao.getArticleSections(articleId).single().id
+        val repository = ArticleRepository(dao)
+
+        val reset = repository.resetArticleSectionDraftToSaved(
+            articleId = articleId,
+            sectionId = sectionId,
+            nowMillis = 600,
+        )
+
+        val section = dao.getArticleSections(articleId).single()
+        assertTrue(reset)
+        assertEquals("保存済み本文", section.content)
+        assertEquals("保存済み本文", section.draftContent)
+        assertTrue(section.userApproved)
+        assertEquals(600L, section.draftUpdatedAt)
+    }
+
+    @Test
+    fun updateArticleSectionUserApproved_doesNotChangeContentOrDraft() = runBlocking {
+        val dao = FakeArticleDao()
+        val articleId = dao.insertArticleDraft(phase2Article())
+        dao.insertArticleSections(
+            listOf(
+                section(
+                    articleId = articleId,
+                    heading = "背景",
+                    orderIndex = 0,
+                    content = "保存済み本文",
+                    draftContent = "編集中本文",
+                ),
+            ),
+        )
+        val sectionId = dao.getArticleSections(articleId).single().id
+        val repository = ArticleRepository(dao)
+
+        val updated = repository.updateArticleSectionUserApproved(
+            articleId = articleId,
+            sectionId = sectionId,
+            userApproved = true,
+            nowMillis = 700,
+        )
+
+        val section = dao.getArticleSections(articleId).single()
+        assertTrue(updated)
+        assertEquals("保存済み本文", section.content)
+        assertEquals("編集中本文", section.draftContent)
+        assertTrue(section.userApproved)
+    }
+
+    @Test
+    fun articleSectionContentOperations_failForInvalidArticleOrSection() = runBlocking {
+        val dao = FakeArticleDao()
+        val phase1Id = dao.insertArticleDraft(phase1Article())
+        val phase2Id = dao.insertArticleDraft(phase2Article())
+        val otherArticleId = dao.insertArticleDraft(phase2Article())
+        dao.insertArticleSections(listOf(section(articleId = otherArticleId, heading = "他記事", orderIndex = 0)))
+        val otherSectionId = dao.getArticleSections(otherArticleId).single().id
+        val repository = ArticleRepository(dao)
+
+        assertFalse(repository.updateArticleSectionDraftContent(phase1Id, otherSectionId, "本文", 800))
+        assertFalse(repository.updateArticleSectionDraftContent(999, otherSectionId, "本文", 800))
+        assertFalse(repository.updateArticleSectionDraftContent(phase2Id, 999, "本文", 800))
+        assertFalse(repository.updateArticleSectionDraftContent(phase2Id, otherSectionId, "本文", 800))
+        assertFalse(repository.saveArticleSectionContent(phase1Id, otherSectionId, 800))
+        assertFalse(repository.resetArticleSectionDraftToSaved(phase1Id, otherSectionId, 800))
+        assertFalse(repository.updateArticleSectionUserApproved(phase1Id, otherSectionId, true, 800))
+    }
+
+    @Test
+    fun saveArticleSectionContentUseCase_returnsNotPhase2OrMissing_whenRepositoryRejects() = runBlocking {
+        val dao = FakeArticleDao()
+        val articleId = dao.insertArticleDraft(phase1Article())
+        val useCase = SaveArticleSectionContentUseCase(ArticleRepository(dao))
+
+        val result = useCase(articleId, 999)
+
+        assertEquals(ArticleSectionContentOperationResult.NotPhase2OrMissing, result)
+    }
+
     private fun phase1Article(): ArticleDraftEntity =
         ArticleDraftEntity(
             phase = ArticlePhase.Phase1,
@@ -326,6 +491,9 @@ private class FakeArticleDao : ArticleDao {
 
     override fun observeArticleSections(articleId: Long): Flow<List<ArticleSectionEntity>> =
         flowOf(sections.filter { it.articleId == articleId }.sortedBy { it.orderIndex })
+
+    override fun observeArticleSection(articleId: Long, sectionId: Long): Flow<ArticleSectionEntity?> =
+        flowOf(sections.firstOrNull { it.articleId == articleId && it.id == sectionId })
 
     override suspend fun insertArticleDraft(articleDraft: ArticleDraftEntity): Long {
         val id = nextArticleId++

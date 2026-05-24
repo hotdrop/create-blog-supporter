@@ -27,6 +27,9 @@ class ArticleRepository @Inject constructor(
     fun observeArticleSections(articleId: Long): Flow<List<ArticleSection>> =
         articleDao.observeArticleSections(articleId).map { sections -> sections.map { it.toDomain() } }
 
+    fun observeArticleSection(articleId: Long, sectionId: Long): Flow<ArticleSection?> =
+        articleDao.observeArticleSection(articleId, sectionId).map { it?.toDomain() }
+
     suspend fun createPhase1Article(
         topic: String,
         detail: String,
@@ -137,6 +140,54 @@ class ArticleRepository @Inject constructor(
             articleId = articleId,
             sectionId = sectionId,
             direction = direction,
+            nowMillis = nowMillis,
+        )
+
+    suspend fun updateArticleSectionDraftContent(
+        articleId: Long,
+        sectionId: Long,
+        draftContent: String,
+        nowMillis: Long,
+    ): Boolean =
+        articleDao.updateArticleSectionDraftContent(
+            articleId = articleId,
+            sectionId = sectionId,
+            draftContent = draftContent,
+            nowMillis = nowMillis,
+        )
+
+    suspend fun saveArticleSectionContent(
+        articleId: Long,
+        sectionId: Long,
+        nowMillis: Long,
+    ): Boolean =
+        articleDao.saveArticleSectionContent(
+            articleId = articleId,
+            sectionId = sectionId,
+            nowMillis = nowMillis,
+        )
+
+    suspend fun resetArticleSectionDraftToSaved(
+        articleId: Long,
+        sectionId: Long,
+        nowMillis: Long,
+    ): Boolean =
+        articleDao.resetArticleSectionDraftToSaved(
+            articleId = articleId,
+            sectionId = sectionId,
+            nowMillis = nowMillis,
+        )
+
+    suspend fun updateArticleSectionUserApproved(
+        articleId: Long,
+        sectionId: Long,
+        userApproved: Boolean,
+        nowMillis: Long,
+    ): Boolean =
+        articleDao.updateArticleSectionUserApproved(
+            articleId = articleId,
+            sectionId = sectionId,
+            userApproved = userApproved,
             nowMillis = nowMillis,
         )
 }
