@@ -30,12 +30,12 @@
   - タイトル入力済み、`phase2`、全章節 `userApproved=true` の場合のみ出力可能にする。
   - 出力本文には `content` のみを使い、`draftContent` は混ぜない。
   - Markdown文字列生成とファイル書き込みを分離する。
-
-## 未着手のタスク
-- [ ] **Task 6: LLM支援機能の境界実装**
+- [x] **Task 6: LLM支援機能の境界実装**
   - UI/ViewModelからLiteRT-LM SDK型を隠すアプリ独自の request/result 型を定義する。
   - タイトル案、目次案、章節概要、改善提案、誤字脱字チェックのUseCaseを作る。
   - この時点ではFake実装でよい。
+
+## 未着手のタスク
 - [ ] **Task 7: LiteRT-LM実装**
   - `docs/LocalLLMSample/` を参照してLiteRT-LM本体を接続する。
   - Engine初期化、Flowストリーミング、キャンセル、CPU fallback、エラー変換を実装する。
