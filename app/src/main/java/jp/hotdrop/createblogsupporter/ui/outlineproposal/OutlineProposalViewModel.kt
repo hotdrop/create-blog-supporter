@@ -123,7 +123,7 @@ class OutlineProposalViewModel @Inject constructor(
         }
     }
 
-    private fun updateGeneratedProposals(article: ArticleDraft) {
+    private suspend fun updateGeneratedProposals(article: ArticleDraft) {
         val titleProposals = when (
             val result = generateTitleProposalsUseCase(
                 TitleProposalRequest(

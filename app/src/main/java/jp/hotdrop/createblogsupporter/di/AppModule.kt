@@ -11,6 +11,8 @@ import jp.hotdrop.createblogsupporter.data.local.AppDatabase
 import jp.hotdrop.createblogsupporter.data.local.ArticleDao
 import jp.hotdrop.createblogsupporter.data.export.AndroidMarkdownFileWriter
 import jp.hotdrop.createblogsupporter.data.export.MarkdownFileWriter
+import jp.hotdrop.createblogsupporter.data.llm.LiteRtLmBlogSupportClient
+import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmClient
 import javax.inject.Singleton
 
 @Module
@@ -33,4 +35,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideMarkdownFileWriter(writer: AndroidMarkdownFileWriter): MarkdownFileWriter = writer
+
+    @Provides
+    @Singleton
+    fun provideBlogSupportLlmClient(client: LiteRtLmBlogSupportClient): BlogSupportLlmClient = client
 }

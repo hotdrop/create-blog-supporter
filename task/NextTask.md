@@ -36,7 +36,7 @@
   - この時点ではFake実装でよい。
 
 ## 未着手のタスク
-- [ ] **Task 7: LiteRT-LM実装**
+- [x] **Task 7: LiteRT-LM実装**
   - `docs/LocalLLMSample/` を参照してLiteRT-LM本体を接続する。
   - Engine初期化、Flowストリーミング、キャンセル、CPU fallback、エラー変換を実装する。
 
