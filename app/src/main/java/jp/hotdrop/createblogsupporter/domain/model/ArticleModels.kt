@@ -61,8 +61,3 @@ data class OutlineProposal(
     val name: String,
     val headings: List<String>,
 )
-
-data class OutlineProposalSet(
-    val titleProposals: List<TitleProposal>,
-    val outlineProposals: List<OutlineProposal>,
-)

@@ -20,6 +20,7 @@
     <string name="adopt_selected_proposal">選択した案を採用する</string>
     <string name="select_outline_proposal">タイトル案と目次案を選択してください。</string>
     <string name="adopt_outline_failed">目次案を採用できませんでした。</string>
+    <string name="llm_support_generation_failed">提案を生成できませんでした。時間をおいて再度お試しください。</string>
     <string name="outline_proposal_not_phase1">この記事は目次案を採用できません。</string>
     <string name="phase1_label">Phase1</string>
     <string name="phase2_label">Phase2</string>

@@ -271,6 +271,7 @@ private fun MessageText(message: OutlineProposalMessage?) {
         null -> null
         OutlineProposalMessage.SelectProposal -> stringResource(R.string.select_outline_proposal)
         OutlineProposalMessage.AdoptFailed -> stringResource(R.string.adopt_outline_failed)
+        OutlineProposalMessage.GenerationFailed -> stringResource(R.string.llm_support_generation_failed)
     }
     if (text != null) {
         Text(
