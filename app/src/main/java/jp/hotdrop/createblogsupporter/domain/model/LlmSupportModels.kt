@@ -7,7 +7,11 @@ sealed interface LlmSupportResult<out T> {
 
 enum class LlmSupportFailure {
     Unavailable,
+    ModelNotConfigured,
+    ModelFileMissing,
+    InitializationFailed,
     GenerationFailed,
+    ResponseFormatInvalid,
 }
 
 data class TitleProposalRequest(

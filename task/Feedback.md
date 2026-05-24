@@ -19,3 +19,25 @@
 - AGENTS.md: 既存ルールで十分だが、将来のTask7以降でLLM client抽象の置き場所を恒久化するなら追記候補。
 - .codex/skills/md-doc-viewer/SKILL.md: 該当なし。
 - docs/README/task/tests など: `task/NextTask.md` のTask7に「Fake UseCaseをSDK境界へ接続する」旨を追記すると次工程が明確になる。
+
+# 2026/5/24 20:08 フィードバック
+
+## 作業内容
+- Task7として、LiteRT-LM SDKをdata層のclient実装へ接続し、UseCaseからアプリ独自型経由で呼び出す構成へ差し替えた。
+- Engine再利用、Flowストリーミング、キャンセル再送出、GPU初期化失敗時のCPU fallback、モデル不在・初期化失敗・生成失敗・パース失敗の変換を追加した。
+- Fake clientを使うUseCaseテストへ更新し、`./gradlew :app:compileDebugKotlin`、`./gradlew :app:testDebugUnitTest`、`./gradlew :app:assembleDebug` で検証した。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: モデルファイルの配置場所とユーザー導線がTask7本文だけでは未定義だったため、実装では `filesDir/models/blog-supporter.litertlm` の規約に限定した。
+- 改善した方がよいルール・手順: LiteRT-LMモデルの配置パス、初回セットアップ手順、モデル未配置時のUI文言をタスクまたはREADMEに明記した方がよい。
+- 追加した方がよいルール・手順: LLM応答の構造化フォーマットはプロンプトとパーサーが強く結合するため、今後のUI連携前にパース失敗時の再試行やフォールバック方針を決めておくとよい。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: `docs/LocalLLMSample/` を参照した実装ではCPU fallbackとnative library宣言が必要になるため、ローカルLLMセットアップメモとして残す価値がある。
+
+## 分類
+- タスク固有: Task7ではSDK接続とUseCase差し替えに限定し、モデルダウンロードや外部連携、設定画面追加はMVP非スコープとして扱った。
+- 恒久対応候補: LiteRT-LMモデル配置規約とエラー表示方針は今後のLLM UI実装でも再利用されるため、恒久的な開発メモ候補。
+
+## 更新先候補
+- AGENTS.md: モデル配置規約を恒久ルールにするなら追記候補。
+- .codex/skills/md-doc-viewer/SKILL.md: 該当なし。
+- docs/README/task/tests など: READMEまたはdocsに `filesDir/models/blog-supporter.litertlm` の配置手順、モデル未配置時の期待動作、LLM応答フォーマットを追記するとよい。
