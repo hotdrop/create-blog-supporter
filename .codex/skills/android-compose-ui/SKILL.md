@@ -13,6 +13,7 @@ description: This app's Jetpack Compose UI implementation and modification skill
 
 ## Preview ルール
 - 画面 Composable を追加・更新したら必ず `@Preview` を追加する。
+- 複数画面または複数状態を追加するタスクでは、実装前に必須 Preview 状態と主要 `testTag` をタスク計画に列挙する。
 - Preview は Screen を直接描画し、ViewModel/Hilt/Navigation に依存させない。
 - 条件分岐で表示される UI をすべて個別 Preview で確認可能にする。
 - 最低限、通常・ローディング・エラー・空状態・ダイアログ表示を分けて Preview する。
@@ -30,6 +31,7 @@ description: This app's Jetpack Compose UI implementation and modification skill
 
 ## 完了チェック
 - Route/Screen 分離が保たれている。
+- 複数画面・複数状態を扱う場合、計画時に列挙した必須 Preview 状態と主要 `testTag` が実装に反映されている。
 - 条件分岐 UI を含む Preview が揃っている。
 - 文字列・色の直書きがなく、寸法はテーマ・定数・画面固有値のいずれかとして意図が明確である。
 - Preview が「通常・ローディング・エラー・空状態 + 画面固有状態」を網羅している。

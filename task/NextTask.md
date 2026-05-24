@@ -26,13 +26,12 @@
   - 自動保存は `draftContent` のみに行う。
   - 保存ボタン経由でのみ `content` を更新する。
   - 保存済みに戻す操作と簡易比較表示を実装する。
-
-## 未着手のタスク
-
-- [ ] **Task 5: Markdown出力**
+- [x] **Task 5: Markdown出力**
   - タイトル入力済み、`phase2`、全章節 `userApproved=true` の場合のみ出力可能にする。
   - 出力本文には `content` のみを使い、`draftContent` は混ぜない。
   - Markdown文字列生成とファイル書き込みを分離する。
+
+## 未着手のタスク
 - [ ] **Task 6: LLM支援機能の境界実装**
   - UI/ViewModelからLiteRT-LM SDK型を隠すアプリ独自の request/result 型を定義する。
   - タイトル案、目次案、章節概要、改善提案、誤字脱字チェックのUseCaseを作る。

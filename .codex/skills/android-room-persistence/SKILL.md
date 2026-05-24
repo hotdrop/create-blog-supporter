@@ -19,6 +19,7 @@ description: Use when adding or modifying Room persistence, DAOs, entities, data
 - `ArticleSection.orderIndex` は記事内の表示順の唯一の基準とし、並び替え時は同一transactionで整合させる。
 - `ArticleSection.content` は保存済み本文、`draftContent` は編集中本文として扱う。
 - 自動保存は `draftContent` のみを更新する。`content` は保存操作を表すUseCase経由でのみ更新する。
+- `content` 更新時に `userApproved` を維持するか解除するかはUseCase仕様として明示し、Markdown出力条件に影響する状態を暗黙更新しない。
 - 保存済みに戻す操作では `draftContent` を `content` で上書きし、`content` は変更しない。
 
 ## Migration ルール

@@ -20,6 +20,8 @@ description: This app utilizes Kotlin Coroutines/Flow implementation skills. The
 ## 並行処理ルール
 - 画面初期化・同期処理・保存処理など、競合しうるジョブを明示的に分離する。
 - 同時実行不可の処理には「実行中なら return」のガードを入れる。
+- 自動保存つき編集画面では、明示保存時に保留中の入力を先に永続化するか、明示保存処理に現在入力値を直接渡すかを設計で固定する。
+- 自動保存ジョブと明示保存ジョブが同じデータを扱う場合は、保存順序、キャンセル、二重実行防止を明示する。
 - 共有状態更新は `_uiState.update` に寄せて一貫性を保つ。
 
 ## テストルール
@@ -31,4 +33,5 @@ description: This app utilizes Kotlin Coroutines/Flow implementation skills. The
 - 無制御なコルーチン起動がない。
 - キャンセルと例外が正しく扱われる。
 - Job 競合が制御される。
+- 自動保存と明示保存が共存する画面では、未反映入力と保存ジョブの競合処理が仕様どおりに実装されている。
 - 複雑な非同期分岐がUseCase、Repository、LLM clientにある場合、該当レイヤーのテストが追加または更新される。
