@@ -24,6 +24,9 @@ class ArticleRepository @Inject constructor(
     fun observeArticleDraft(articleId: Long): Flow<ArticleDraft?> =
         articleDao.observeArticleDraft(articleId).map { it?.toDomain() }
 
+    suspend fun getArticleDraft(articleId: Long): ArticleDraft? =
+        articleDao.getArticleDraft(articleId)?.toDomain()
+
     fun observeArticleSections(articleId: Long): Flow<List<ArticleSection>> =
         articleDao.observeArticleSections(articleId).map { sections -> sections.map { it.toDomain() } }
 
@@ -188,6 +191,15 @@ class ArticleRepository @Inject constructor(
             articleId = articleId,
             sectionId = sectionId,
             userApproved = userApproved,
+            nowMillis = nowMillis,
+        )
+
+    suspend fun markArticleExported(
+        articleId: Long,
+        nowMillis: Long,
+    ): Boolean =
+        articleDao.markArticleExported(
+            articleId = articleId,
             nowMillis = nowMillis,
         )
 }

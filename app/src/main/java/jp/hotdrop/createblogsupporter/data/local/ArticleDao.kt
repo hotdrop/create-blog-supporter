@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSectionMoveDirection
+import jp.hotdrop.createblogsupporter.domain.model.ArticleStatus
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -320,6 +321,25 @@ interface ArticleDao {
             ),
         )
         updateArticleDraft(current.copy(updatedAt = nowMillis))
+        return true
+    }
+
+    @Transaction
+    suspend fun markArticleExported(
+        articleId: Long,
+        nowMillis: Long,
+    ): Boolean {
+        val current = getArticleDraft(articleId) ?: return false
+        if (current.phase != ArticlePhase.Phase2) {
+            return false
+        }
+        updateArticleDraft(
+            current.copy(
+                status = ArticleStatus.Exported,
+                updatedAt = nowMillis,
+                exportedAt = nowMillis,
+            ),
+        )
         return true
     }
 }

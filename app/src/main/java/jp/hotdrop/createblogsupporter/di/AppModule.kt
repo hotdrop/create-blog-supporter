@@ -9,6 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import jp.hotdrop.createblogsupporter.data.local.AppDatabase
 import jp.hotdrop.createblogsupporter.data.local.ArticleDao
+import jp.hotdrop.createblogsupporter.data.export.AndroidMarkdownFileWriter
+import jp.hotdrop.createblogsupporter.data.export.MarkdownFileWriter
 import javax.inject.Singleton
 
 @Module
@@ -27,4 +29,8 @@ object AppModule {
 
     @Provides
     fun provideArticleDao(database: AppDatabase): ArticleDao = database.articleDao()
+
+    @Provides
+    @Singleton
+    fun provideMarkdownFileWriter(writer: AndroidMarkdownFileWriter): MarkdownFileWriter = writer
 }
