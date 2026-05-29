@@ -228,19 +228,6 @@ data class ArticleEditorUiState(
     val message: ArticleEditorMessage? = null,
     val error: ArticleEditorError? = null,
 ) {
-    val fullPreview: String
-        get() = buildString {
-            append("# ")
-            append(title)
-            sections.forEach { section ->
-                append("\n\n## ")
-                append(section.heading)
-                if (section.content.isNotBlank()) {
-                    append("\n\n")
-                    append(section.content)
-                }
-            }
-        }
 }
 
 data class ArticleEditorSectionUiState(

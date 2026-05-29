@@ -16,6 +16,7 @@ fun ArticleEditorRoute(
     onBack: () -> Unit,
     onEditOutline: (Long) -> Unit,
     onEditSection: (Long, Long) -> Unit,
+    onOpenPreview: (Long) -> Unit,
     viewModel: ArticleEditorViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,6 +57,9 @@ fun ArticleEditorRoute(
         onExportMarkdownClick = viewModel::onExportMarkdownClick,
         onEditOutlineClick = { articleId ->
             onEditOutline(articleId)
+        },
+        onOpenPreviewClick = { articleId ->
+            onOpenPreview(articleId)
         },
         onSectionClick = { sectionId ->
             uiState.value.articleId?.let { articleId ->

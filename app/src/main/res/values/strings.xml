@@ -55,6 +55,7 @@
     <string name="edit_outline">目次を編集</string>
     <string name="outline_empty">章節がありません。</string>
     <string name="full_preview_heading">全文プレビュー</string>
+    <string name="article_preview_empty">保存済み本文がある章節はまだありません。</string>
     <string name="section_content_empty">本文なし</string>
     <string name="section_content_saved">保存済み本文あり</string>
     <string name="section_user_approved">確認済み</string>

@@ -15,10 +15,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,6 +55,7 @@ fun ArticleEditorScreen(
     onSaveTitleClick: () -> Unit,
     onExportMarkdownClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
+    onOpenPreviewClick: (Long) -> Unit,
     onSectionClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -89,6 +93,7 @@ fun ArticleEditorScreen(
                 onSaveTitleClick = onSaveTitleClick,
                 onExportMarkdownClick = onExportMarkdownClick,
                 onEditOutlineClick = onEditOutlineClick,
+                onOpenPreviewClick = onOpenPreviewClick,
                 onSectionClick = onSectionClick,
             )
         }
@@ -144,6 +149,7 @@ private fun ArticleEditorContent(
     onSaveTitleClick: () -> Unit,
     onExportMarkdownClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
+    onOpenPreviewClick: (Long) -> Unit,
     onSectionClick: (Long) -> Unit,
 ) {
     Column(
@@ -171,6 +177,7 @@ private fun ArticleEditorContent(
             singleLine = false,
             minLines = 1,
         )
+        // タイトル保存ボタン
         Button(
             onClick = onSaveTitleClick,
             enabled = !uiState.isSavingTitle,
@@ -190,24 +197,8 @@ private fun ArticleEditorContent(
             }
         }
         MessageText(message = uiState.message)
-        Button(
-            onClick = onExportMarkdownClick,
-            enabled = !uiState.isExportingMarkdown,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("articleEditor.exportMarkdownButton")
-                .semantics { contentDescription = "export_markdown" },
-        ) {
-            if (uiState.isExportingMarkdown) {
-                CircularProgressIndicator()
-            } else {
-                Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                Text(
-                    text = stringResource(R.string.export_markdown),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        }
+
+        // 目次
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -250,18 +241,45 @@ private fun ArticleEditorContent(
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.full_preview_heading),
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Text(
-            text = uiState.fullPreview,
+
+        // ボタン
+        OutlinedButton(
+            onClick = {
+                val articleId = uiState.articleId
+                if (articleId != null) {
+                    onOpenPreviewClick(articleId)
+                }
+            },
+            enabled = uiState.articleId != null,
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("articleEditor.fullPreview"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+                .testTag("articleEditor.openPreviewButton")
+                .semantics { contentDescription = "open_article_preview" },
+        ) {
+            Icon(imageVector = Icons.Default.Visibility, contentDescription = null)
+            Text(
+                text = stringResource(R.string.full_preview_heading),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        Button(
+            onClick = onExportMarkdownClick,
+            enabled = !uiState.isExportingMarkdown,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("articleEditor.exportMarkdownButton")
+                .semantics { contentDescription = "export_markdown" },
+        ) {
+            if (uiState.isExportingMarkdown) {
+                CircularProgressIndicator()
+            } else {
+                Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.export_markdown),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
     }
 }
 
@@ -302,21 +320,55 @@ private fun ArticleEditorSectionCard(
                         )
                     },
                 )
-                AssistChip(
+                ArticleApprovalChip(
+                    userApproved = section.userApproved,
                     onClick = onClick,
-                    label = {
-                        Text(
-                            text = if (section.userApproved) {
-                                stringResource(R.string.section_user_approved)
-                            } else {
-                                stringResource(R.string.section_user_not_approved)
-                            },
-                        )
-                    },
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ArticleApprovalChip(
+    userApproved: Boolean,
+    onClick: () -> Unit,
+) {
+    val contentColor = if (userApproved) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+    AssistChip(
+        onClick = onClick,
+        label = {
+            Text(
+                text = if (userApproved) {
+                    stringResource(R.string.section_user_approved)
+                } else {
+                    stringResource(R.string.section_user_not_approved)
+                },
+            )
+        },
+        leadingIcon = if (userApproved) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                )
+            }
+        } else {
+            null
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            labelColor = contentColor,
+            leadingIconContentColor = contentColor,
+        ),
+        border = AssistChipDefaults.assistChipBorder(
+            enabled = true,
+            borderColor = contentColor,
+        ),
+    )
 }
 
 @Composable
@@ -379,6 +431,7 @@ private fun ArticleEditorReadyPreview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }
@@ -400,6 +453,7 @@ private fun ArticleEditorSavingMessagePreview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }
@@ -421,6 +475,7 @@ private fun ArticleEditorExportingPreview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }
@@ -442,6 +497,7 @@ private fun ArticleEditorExportBlockedPreview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }
@@ -458,6 +514,7 @@ private fun ArticleEditorLoadingPreview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }
@@ -474,6 +531,7 @@ private fun ArticleEditorNotFoundPreview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }
@@ -490,6 +548,7 @@ private fun ArticleEditorNotPhase2Preview() {
             onSaveTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
+            onOpenPreviewClick = {},
             onSectionClick = {},
         )
     }

@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import jp.hotdrop.createblogsupporter.ui.articleentry.ArticleEntryRoute
+import jp.hotdrop.createblogsupporter.ui.articlepreview.ArticlePreviewRoute
 import jp.hotdrop.createblogsupporter.ui.articlelist.ArticleListRoute
 import jp.hotdrop.createblogsupporter.ui.articlememo.ArticleMemoRoute
 import jp.hotdrop.createblogsupporter.ui.navigation.AppDestination
@@ -63,6 +64,17 @@ fun CreateBlogSupporterApp() {
                     onEditSection = { articleId, sectionId ->
                         navController.navigate(AppDestination.sectionEdit(articleId, sectionId))
                     },
+                    onOpenPreview = { articleId ->
+                        navController.navigate(AppDestination.articlePreview(articleId))
+                    },
+                )
+            }
+            composable(
+                route = AppDestination.ArticlePreviewPattern,
+                arguments = listOf(navArgument("articleId") { type = NavType.LongType }),
+            ) {
+                ArticlePreviewRoute(
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(
