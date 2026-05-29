@@ -14,13 +14,21 @@
     <string name="article_saved">記事メモを保存しました。</string>
     <string name="article_save_failed">記事メモを保存できませんでした。</string>
     <string name="outline_proposal_title">目次案の選択</string>
+    <string name="outline_generation_loading_title">ローカルLLMで目次案を生成中</string>
+    <string name="outline_generation_loading_message">モデルの読み込みと生成に数分かかることがあります。端末内で処理しているため、通信待ちではありません。</string>
+    <string name="outline_generation_loading_step_model">LiteRT-LMモデルを準備しています</string>
+    <string name="outline_generation_loading_step_title">記事メモからタイトル案を考えています</string>
+    <string name="outline_generation_loading_step_outline">タイトル案に合わせて目次案を組み立てています</string>
+    <string name="outline_generation_loading_keep_open">この画面を開いたままお待ちください。戻ると生成を中断します。</string>
     <string name="title_proposals_heading">タイトル案</string>
     <string name="outline_proposals_heading">目次案</string>
     <string name="outline_heading_format">%1$d. %2$s</string>
     <string name="adopt_selected_proposal">選択した案を採用する</string>
     <string name="select_outline_proposal">タイトル案と目次案を選択してください。</string>
     <string name="adopt_outline_failed">目次案を採用できませんでした。</string>
-    <string name="llm_support_generation_failed">提案を生成できませんでした。時間をおいて再度お試しください。</string>
+    <string name="llm_support_generation_failed">LiteRT-LMの応答を取得できませんでした。モデルファイルを設定し直してください。</string>
+    <string name="llm_support_model_not_configured">LiteRT-LMモデルを設定してから目次案を生成してください。</string>
+    <string name="llm_support_model_initialization_failed">LiteRT-LMモデルを初期化できませんでした。別の.litertlmファイルを設定してください。</string>
     <string name="outline_proposal_not_phase1">この記事は目次案を採用できません。</string>
     <string name="phase1_label">目次案</string>
     <string name="phase2_label">執筆</string>
@@ -71,7 +79,6 @@
     <string name="section_comparison_changed">変更あり</string>
     <string name="section_has_unsaved_changes">未保存の変更あり</string>
     <string name="section_no_unsaved_changes">保存済みと同じ</string>
-    <string name="section_auto_saving">下書き自動保存中</string>
     <string name="section_draft_auto_saved">編集中本文を自動保存しました。</string>
     <string name="section_content_saved_message">本文を保存しました。確認済みにする場合はスイッチをオンにしてください。</string>
     <string name="section_draft_reset_message">編集中本文を保存済みに戻しました。</string>
@@ -95,4 +102,14 @@
     <string name="section_moved">章節を移動しました。</string>
     <string name="last_section_cannot_delete">最後の1章節は削除できません。</string>
     <string name="outline_operation_failed">目次を更新できませんでした。</string>
+    <string name="llm_settings_title">LiteRT-LM設定</string>
+    <string name="llm_settings_description">記事の構成案や校正候補を端末内で生成するため、.litertlmモデルファイルを選択してください。</string>
+    <string name="llm_settings_model_section_title">モデルファイル</string>
+    <string name="llm_settings_model_not_selected">モデル未設定</string>
+    <string name="llm_settings_model_path_placeholder">選択したモデルはアプリ内ストレージにコピーされます。</string>
+    <string name="llm_settings_pick_model">モデルを選択</string>
+    <string name="llm_settings_model_importing">モデルを取り込んでいます。</string>
+    <string name="llm_settings_model_importing_detail">ファイルサイズによっては時間がかかります。</string>
+    <string name="llm_settings_model_selected">モデルを設定しました。</string>
+    <string name="llm_settings_error_model_import_failed">.litertlmモデルファイルを取り込めませんでした。</string>
 </resources>

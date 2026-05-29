@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -22,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -31,6 +34,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -71,7 +75,10 @@ fun OutlineProposalScreen(
         },
     ) { innerPadding ->
         when {
-            uiState.isLoading -> LoadingContent(innerPadding)
+            uiState.isLoading -> LoadingContent(
+                innerPadding = innerPadding,
+                onBack = onBack,
+            )
             uiState.error != null -> ErrorContent(
                 innerPadding = innerPadding,
                 error = uiState.error,
@@ -91,15 +98,78 @@ fun OutlineProposalScreen(
 }
 
 @Composable
-private fun LoadingContent(innerPadding: PaddingValues) {
+private fun LoadingContent(
+    innerPadding: PaddingValues,
+    onBack: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(innerPadding)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator()
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.outline_generation_loading_title),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.outline_generation_loading_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("outlineProposal.loadingProgress"),
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LoadingStepText(text = stringResource(R.string.outline_generation_loading_step_model))
+            LoadingStepText(text = stringResource(R.string.outline_generation_loading_step_title))
+            LoadingStepText(text = stringResource(R.string.outline_generation_loading_step_outline))
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.outline_generation_loading_keep_open),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.testTag("outlineProposal.cancelLoadingButton"),
+        ) {
+            Text(text = stringResource(R.string.cancel))
+        }
+    }
+}
+
+@Composable
+private fun LoadingStepText(text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier
+                .size(18.dp)
+                .testTag("outlineProposal.loadingStepProgress"),
+            strokeWidth = 2.dp,
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 
@@ -271,6 +341,8 @@ private fun MessageText(message: OutlineProposalMessage?) {
         null -> null
         OutlineProposalMessage.SelectProposal -> stringResource(R.string.select_outline_proposal)
         OutlineProposalMessage.AdoptFailed -> stringResource(R.string.adopt_outline_failed)
+        OutlineProposalMessage.ModelNotConfigured -> stringResource(R.string.llm_support_model_not_configured)
+        OutlineProposalMessage.ModelInitializationFailed -> stringResource(R.string.llm_support_model_initialization_failed)
         OutlineProposalMessage.GenerationFailed -> stringResource(R.string.llm_support_generation_failed)
     }
     if (text != null) {

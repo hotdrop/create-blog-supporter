@@ -2,6 +2,7 @@ package jp.hotdrop.createblogsupporter.ui.navigation
 
 object AppDestination {
     const val ArticleList = "article_list"
+    const val LlmSettings = "settings/llm"
     const val NewArticle = "article/new"
     const val EditArticlePattern = "article/{articleId}"
     const val OutlineProposalsPattern = "article/{articleId}/outline-proposals"

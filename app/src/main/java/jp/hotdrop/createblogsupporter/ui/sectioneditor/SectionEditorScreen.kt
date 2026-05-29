@@ -273,12 +273,6 @@ private fun StatusRow(uiState: SectionEditorUiState) {
                 )
             },
         )
-        if (uiState.isAutoSavingDraft) {
-            AssistChip(
-                onClick = {},
-                label = { Text(text = stringResource(R.string.section_auto_saving)) },
-            )
-        }
     }
 }
 
@@ -369,7 +363,7 @@ private fun ComparisonRow(
 private fun MessageText(message: SectionEditorMessage?) {
     val text = when (message) {
         null -> null
-        SectionEditorMessage.DraftAutoSaved -> stringResource(R.string.section_draft_auto_saved)
+        SectionEditorMessage.DraftAutoSaved -> null
         SectionEditorMessage.ContentSaved -> stringResource(R.string.section_content_saved_message)
         SectionEditorMessage.DraftReset -> stringResource(R.string.section_draft_reset_message)
         SectionEditorMessage.MarkedApproved -> stringResource(R.string.section_marked_approved)
@@ -463,22 +457,6 @@ private fun SectionEditorSavingPreview() {
     CreateBlogSupporterTheme {
         SectionEditorScreen(
             uiState = PreviewState.copy(isSavingContent = true),
-            onBack = {},
-            onDraftContentChanged = {},
-            onSaveContentClick = {},
-            onResetDraftClick = {},
-            onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SectionEditorAutoSavingPreview() {
-    CreateBlogSupporterTheme {
-        SectionEditorScreen(
-            uiState = PreviewState.copy(isAutoSavingDraft = true),
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},

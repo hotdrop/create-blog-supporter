@@ -15,12 +15,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import jp.hotdrop.createblogsupporter.R
@@ -46,12 +49,28 @@ fun ArticleListScreen(
     uiState: ArticleListUiState,
     onCreateArticle: () -> Unit,
     onOpenArticle: (Long) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(title = { Text(text = stringResource(R.string.article_list_title)) })
+            TopAppBar(
+                title = { Text(text = stringResource(R.string.article_list_title)) },
+                actions = {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier
+                            .testTag("articleList.settingsButton")
+                            .semantics { contentDescription = "open_llm_settings" },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.llm_settings_title),
+                        )
+                    }
+                },
+            )
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -204,6 +223,7 @@ private fun ArticleListLoadingPreview() {
             uiState = ArticleListUiState.Loading,
             onCreateArticle = {},
             onOpenArticle = {},
+            onOpenSettings = {},
         )
     }
 }
@@ -216,6 +236,7 @@ private fun ArticleListEmptyPreview() {
             uiState = ArticleListUiState.Ready(emptyList()),
             onCreateArticle = {},
             onOpenArticle = {},
+            onOpenSettings = {},
         )
     }
 }
@@ -240,6 +261,7 @@ private fun ArticleListReadyPreview() {
             ),
             onCreateArticle = {},
             onOpenArticle = {},
+            onOpenSettings = {},
         )
     }
 }

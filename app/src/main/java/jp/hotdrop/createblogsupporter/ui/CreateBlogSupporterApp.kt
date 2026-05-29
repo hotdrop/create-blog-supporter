@@ -13,6 +13,7 @@ import jp.hotdrop.createblogsupporter.ui.navigation.AppDestination
 import jp.hotdrop.createblogsupporter.ui.outlineedit.OutlineEditRoute
 import jp.hotdrop.createblogsupporter.ui.outlineproposal.OutlineProposalRoute
 import jp.hotdrop.createblogsupporter.ui.sectioneditor.SectionEditorRoute
+import jp.hotdrop.createblogsupporter.ui.settings.LlmSettingsRoute
 import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 
 @Composable
@@ -29,6 +30,12 @@ fun CreateBlogSupporterApp() {
                     onOpenArticle = { articleId ->
                         navController.navigate(AppDestination.editArticle(articleId))
                     },
+                    onOpenSettings = { navController.navigate(AppDestination.LlmSettings) },
+                )
+            }
+            composable(AppDestination.LlmSettings) {
+                LlmSettingsRoute(
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(AppDestination.NewArticle) {

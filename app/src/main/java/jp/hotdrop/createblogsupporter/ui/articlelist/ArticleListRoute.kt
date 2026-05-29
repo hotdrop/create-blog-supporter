@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun ArticleListRoute(
     onCreateArticle: () -> Unit,
     onOpenArticle: (Long) -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: ArticleListViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -15,5 +16,6 @@ fun ArticleListRoute(
         uiState = uiState.value,
         onCreateArticle = onCreateArticle,
         onOpenArticle = onOpenArticle,
+        onOpenSettings = onOpenSettings,
     )
 }

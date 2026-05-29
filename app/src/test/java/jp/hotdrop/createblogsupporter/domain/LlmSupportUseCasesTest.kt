@@ -48,15 +48,37 @@ class LlmSupportUseCasesTest {
     }
 
     @Test
-    fun generateTitleProposals_returnsFormatFailureWhenResponseCannotBeParsed() = runBlocking {
+    fun generateTitleProposals_fallsBackWhenResponseCannotBeParsed() = runBlocking {
         val result = GenerateTitleProposalsUseCase(FakeBlogSupportLlmClient("タイトル案です"))(
             TitleProposalRequest(
                 topic = "   ",
                 detail = "まだ題材が固まっていない",
             ),
-        )
+        ).successValue()
 
-        assertEquals(LlmSupportFailure.ResponseFormatInvalid, result.failureReason())
+        assertEquals(3, result.size)
+        assertTrue(result.all { it.title.isNotBlank() })
+    }
+
+    @Test
+    fun generateTitleProposals_fallsBackWhenModelReturnsLooseText() = runBlocking {
+        val result = GenerateTitleProposalsUseCase(
+            FakeBlogSupportLlmClient(
+                """
+                1. Compose Navigation の基本を整理する
+                2. Route分割で学んだ設計判断
+                3. 実装して分かった注意点
+                """.trimIndent(),
+            ),
+        )(
+            TitleProposalRequest(
+                topic = "Compose Navigation",
+                detail = "RouteとScreenを分ける",
+            ),
+        ).successValue()
+
+        assertEquals(3, result.size)
+        assertEquals("Compose Navigation の基本を整理する", result.first().title)
     }
 
     @Test
@@ -115,6 +137,29 @@ class LlmSupportUseCasesTest {
 
         assertEquals(3, result.size)
         assertTrue(result.all { it.headings.size == 4 })
+    }
+
+    @Test
+    fun generateOutlineProposals_fallsBackWhenModelReturnsLooseText() = runBlocking {
+        val result = GenerateOutlineProposalsUseCase(
+            FakeBlogSupportLlmClient(
+                """
+                背景と課題
+                設計方針
+                実装の流れ
+                振り返り
+                """.trimIndent(),
+            ),
+        )(
+            OutlineProposalRequest(
+                topic = "Compose Navigation",
+                detail = "RouteとScreenを分ける",
+            ),
+        ).successValue()
+
+        assertEquals(3, result.size)
+        assertTrue(result.all { it.headings.size >= 3 })
+        assertEquals("背景と課題", result.first().headings.first())
     }
 
     @Test

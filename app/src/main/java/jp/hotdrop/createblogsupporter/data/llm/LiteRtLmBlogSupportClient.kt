@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import jp.hotdrop.createblogsupporter.data.repository.LlmSettingsRepository
 import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
 import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmClient
 import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmRequest
@@ -29,6 +30,7 @@ import kotlinx.coroutines.sync.withLock
 @Singleton
 class LiteRtLmBlogSupportClient @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val llmSettingsRepository: LlmSettingsRepository,
 ) : BlogSupportLlmClient {
     private val engineMutex = Mutex()
     private val generationMutex = Mutex()
@@ -68,11 +70,7 @@ class LiteRtLmBlogSupportClient @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     private fun resolveModelPath(): String {
-        val modelFile = File(context.filesDir, DefaultModelRelativePath)
-        if (!modelFile.exists() || !modelFile.isFile) {
-            throw LlmSupportException(LlmSupportFailure.ModelFileMissing)
-        }
-        return modelFile.absolutePath
+        return resolveConfiguredLiteRtLmModelPath(llmSettingsRepository.get().modelFilePath)
     }
 
     private suspend fun ensureEngine(modelPath: String): Engine =
@@ -128,10 +126,20 @@ class LiteRtLmBlogSupportClient @Inject constructor(
     companion object {
         private const val Tag = "LiteRtLmBlogClient"
         private const val CacheDirectoryName = "litertlm-cache"
-        private const val DefaultModelRelativePath = "models/blog-supporter.litertlm"
         private const val BaseSystemPrompt =
             "あなたはユーザー自身の言葉でテックブログを書くための執筆支援アシスタントです。" +
                 "完成本文を代筆せず、構成、論点整理、改善案、校正候補だけを提案してください。" +
                 "提案はユーザーが編集して判断できる候補として返してください。"
     }
+}
+
+internal fun resolveConfiguredLiteRtLmModelPath(modelFilePath: String?): String {
+    if (modelFilePath.isNullOrBlank()) {
+        throw LlmSupportException(LlmSupportFailure.ModelNotConfigured)
+    }
+    val modelFile = File(modelFilePath)
+    if (!modelFile.exists() || !modelFile.isFile) {
+        throw LlmSupportException(LlmSupportFailure.ModelFileMissing)
+    }
+    return modelFile.absolutePath
 }

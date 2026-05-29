@@ -24,6 +24,7 @@ class GenerateTitleProposalsUseCase @Inject constructor(
             llmClient = llmClient,
             prompt = buildTitlePrompt(request),
             parser = ::parseTitleProposals,
+            fallback = { text -> buildFallbackTitleProposals(request, text) },
         )
 }
 
@@ -35,6 +36,7 @@ class GenerateOutlineProposalsUseCase @Inject constructor(
             llmClient = llmClient,
             prompt = buildOutlinePrompt(request),
             parser = ::parseOutlineProposals,
+            fallback = { text -> buildFallbackOutlineProposals(request, text) },
         )
 }
 
@@ -77,6 +79,7 @@ private suspend fun <T> generateAndParse(
     llmClient: BlogSupportLlmClient,
     prompt: String,
     parser: (String) -> T?,
+    fallback: (String) -> T? = { null },
     temperature: Float = 0.4f,
 ): LlmSupportResult<T> =
     try {
@@ -84,7 +87,7 @@ private suspend fun <T> generateAndParse(
         llmClient.streamText(BlogSupportLlmRequest(prompt = prompt, temperature = temperature)).collect { text ->
             latestText = text
         }
-        val value = parser(latestText)
+        val value = parser(latestText) ?: fallback(latestText)
         if (value == null) {
             LlmSupportResult.Failure(LlmSupportFailure.ResponseFormatInvalid)
         } else {

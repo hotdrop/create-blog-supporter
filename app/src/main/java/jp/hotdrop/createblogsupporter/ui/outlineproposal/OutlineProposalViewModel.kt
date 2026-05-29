@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
+import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
 import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
 import jp.hotdrop.createblogsupporter.domain.model.OutlineProposal
 import jp.hotdrop.createblogsupporter.domain.model.OutlineProposalRequest
@@ -133,7 +134,7 @@ class OutlineProposalViewModel @Inject constructor(
             )
         ) {
             is LlmSupportResult.Success -> result.value
-            is LlmSupportResult.Failure -> return showGenerationFailed()
+            is LlmSupportResult.Failure -> return showGenerationFailed(result.reason)
         }
         val outlineProposals = when (
             val result = generateOutlineProposalsUseCase(
@@ -144,7 +145,7 @@ class OutlineProposalViewModel @Inject constructor(
             )
         ) {
             is LlmSupportResult.Success -> result.value
-            is LlmSupportResult.Failure -> return showGenerationFailed()
+            is LlmSupportResult.Failure -> return showGenerationFailed(result.reason)
         }
         _uiState.update {
             it.copy(
@@ -159,7 +160,7 @@ class OutlineProposalViewModel @Inject constructor(
         }
     }
 
-    private fun showGenerationFailed() {
+    private fun showGenerationFailed(reason: LlmSupportFailure) {
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -167,7 +168,13 @@ class OutlineProposalViewModel @Inject constructor(
                 outlineProposals = emptyList(),
                 selectedTitleId = null,
                 selectedOutlineId = null,
-                message = OutlineProposalMessage.GenerationFailed,
+                message = when (reason) {
+                    LlmSupportFailure.ModelNotConfigured,
+                    LlmSupportFailure.ModelFileMissing,
+                    -> OutlineProposalMessage.ModelNotConfigured
+                    LlmSupportFailure.InitializationFailed -> OutlineProposalMessage.ModelInitializationFailed
+                    else -> OutlineProposalMessage.GenerationFailed
+                },
             )
         }
     }
@@ -193,6 +200,8 @@ data class OutlineProposalUiState(
 enum class OutlineProposalMessage {
     SelectProposal,
     AdoptFailed,
+    ModelNotConfigured,
+    ModelInitializationFailed,
     GenerationFailed,
 }
 
