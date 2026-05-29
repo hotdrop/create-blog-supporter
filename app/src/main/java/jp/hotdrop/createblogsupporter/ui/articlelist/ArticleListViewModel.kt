@@ -3,10 +3,10 @@ package jp.hotdrop.createblogsupporter.ui.articlelist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraftSummary
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleStatus
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftsUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftSummariesUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -15,10 +15,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ArticleListViewModel @Inject constructor(
-    observeArticleDraftsUseCase: ObserveArticleDraftsUseCase,
+    observeArticleDraftSummariesUseCase: ObserveArticleDraftSummariesUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<ArticleListUiState> =
-        observeArticleDraftsUseCase()
+        observeArticleDraftSummariesUseCase()
             .map { drafts ->
                 ArticleListUiState.Ready(
                     articles = drafts.map { it.toArticleListItemUiState() },
@@ -41,18 +41,16 @@ data class ArticleListItemUiState(
     val phase: ArticlePhase,
     val title: String,
     val topic: String,
-    val detail: String,
     val status: ArticleStatus,
     val updatedAt: Long,
 )
 
-private fun ArticleDraft.toArticleListItemUiState(): ArticleListItemUiState =
+private fun ArticleDraftSummary.toArticleListItemUiState(): ArticleListItemUiState =
     ArticleListItemUiState(
         id = id,
         phase = phase,
         title = title,
         topic = topic,
-        detail = detail,
         status = status,
         updatedAt = updatedAt,
     )

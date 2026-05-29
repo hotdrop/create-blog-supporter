@@ -7,7 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateMarkdownUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class ArticlePreviewViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    observeArticleDraftUseCase: ObserveArticleDraftUseCase,
+    observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
     observeArticleSectionsUseCase: ObserveArticleSectionsUseCase,
     private val generateMarkdownUseCase: GenerateMarkdownUseCase,
 ) : ViewModel() {
@@ -31,7 +31,7 @@ class ArticlePreviewViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                observeArticleDraftUseCase(articleId),
+                observeArticleDraftHeaderUseCase(articleId),
                 observeArticleSectionsUseCase(articleId),
             ) { article, sections ->
                 article to sections

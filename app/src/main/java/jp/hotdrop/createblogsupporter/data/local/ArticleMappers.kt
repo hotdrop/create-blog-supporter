@@ -1,6 +1,8 @@
 package jp.hotdrop.createblogsupporter.data.local
 
 import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraftHeader
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraftSummary
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 
 fun ArticleDraftEntity.toDomain(): ArticleDraft =
@@ -14,6 +16,23 @@ fun ArticleDraftEntity.toDomain(): ArticleDraft =
         createdAt = createdAt,
         updatedAt = updatedAt,
         exportedAt = exportedAt,
+    )
+
+fun ArticleDraftSummaryEntity.toDomain(): ArticleDraftSummary =
+    ArticleDraftSummary(
+        id = id,
+        phase = phase,
+        title = title,
+        topic = topic,
+        status = status,
+        updatedAt = updatedAt,
+    )
+
+fun ArticleDraftHeaderEntity.toDomain(): ArticleDraftHeader =
+    ArticleDraftHeader(
+        id = id,
+        phase = phase,
+        title = title,
     )
 
 fun ArticleSectionEntity.toDomain(): ArticleSection =

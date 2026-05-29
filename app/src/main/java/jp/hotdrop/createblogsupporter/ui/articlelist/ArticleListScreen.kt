@@ -195,13 +195,6 @@ private fun ArticleListCard(
                 text = article.title.ifBlank { article.topic },
                 style = MaterialTheme.typography.titleMedium,
             )
-            if (article.detail.isNotBlank()) {
-                Text(
-                    text = article.detail,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
             Text(
                 text = stringResource(
                     R.string.updated_at_format,
@@ -253,7 +246,6 @@ private fun ArticleListReadyPreview() {
                         phase = ArticlePhase.Phase1,
                         title = "",
                         topic = "Composeの状態管理について書く",
-                        detail = "ViewModelとUiStateの責務分離を、自分の失敗談から整理する。",
                         status = ArticleStatus.Draft,
                         updatedAt = 1_700_000_000_000,
                     ),

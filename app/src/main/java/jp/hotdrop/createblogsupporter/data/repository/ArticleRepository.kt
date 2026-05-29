@@ -5,6 +5,8 @@ import jp.hotdrop.createblogsupporter.data.local.ArticleDraftEntity
 import jp.hotdrop.createblogsupporter.data.local.DeleteArticleSectionDaoResult
 import jp.hotdrop.createblogsupporter.data.local.toDomain
 import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraftHeader
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraftSummary
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSectionMoveDirection
@@ -18,14 +20,20 @@ import javax.inject.Singleton
 class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
 ) {
-    fun observeArticleDrafts(): Flow<List<ArticleDraft>> =
-        articleDao.observeArticleDrafts().map { drafts -> drafts.map { it.toDomain() } }
+    fun observeArticleDraftSummaries(): Flow<List<ArticleDraftSummary>> =
+        articleDao.observeArticleDraftSummaries().map { drafts -> drafts.map { it.toDomain() } }
 
     fun observeArticleDraft(articleId: Long): Flow<ArticleDraft?> =
         articleDao.observeArticleDraft(articleId).map { it?.toDomain() }
 
+    fun observeArticleDraftHeader(articleId: Long): Flow<ArticleDraftHeader?> =
+        articleDao.observeArticleDraftHeader(articleId).map { it?.toDomain() }
+
     suspend fun getArticleDraft(articleId: Long): ArticleDraft? =
         articleDao.getArticleDraft(articleId)?.toDomain()
+
+    suspend fun getArticleDraftHeader(articleId: Long): ArticleDraftHeader? =
+        articleDao.getArticleDraftHeader(articleId)?.toDomain()
 
     fun observeArticleSections(articleId: Long): Flow<List<ArticleSection>> =
         articleDao.observeArticleSections(articleId).map { sections -> sections.map { it.toDomain() } }

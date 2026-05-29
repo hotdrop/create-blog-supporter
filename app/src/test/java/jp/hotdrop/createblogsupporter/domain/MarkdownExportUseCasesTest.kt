@@ -4,6 +4,8 @@ import jp.hotdrop.createblogsupporter.data.export.MarkdownExportFile
 import jp.hotdrop.createblogsupporter.data.export.MarkdownFileWriter
 import jp.hotdrop.createblogsupporter.data.local.ArticleDao
 import jp.hotdrop.createblogsupporter.data.local.ArticleDraftEntity
+import jp.hotdrop.createblogsupporter.data.local.ArticleDraftHeaderEntity
+import jp.hotdrop.createblogsupporter.data.local.ArticleDraftSummaryEntity
 import jp.hotdrop.createblogsupporter.data.local.ArticleSectionEntity
 import jp.hotdrop.createblogsupporter.data.repository.ArticleRepository
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
@@ -246,14 +248,20 @@ private class FakeArticleDao : ArticleDao {
     private val drafts = mutableMapOf<Long, ArticleDraftEntity>()
     private val sections = mutableListOf<ArticleSectionEntity>()
 
-    override fun observeArticleDrafts(): Flow<List<ArticleDraftEntity>> =
-        flowOf(drafts.values.toList())
+    override fun observeArticleDraftSummaries(): Flow<List<ArticleDraftSummaryEntity>> =
+        flowOf(drafts.values.sortedByDescending { it.updatedAt }.map { it.toSummaryEntity() })
 
     override fun observeArticleDraft(articleId: Long): Flow<ArticleDraftEntity?> =
         flowOf(drafts[articleId])
 
+    override fun observeArticleDraftHeader(articleId: Long): Flow<ArticleDraftHeaderEntity?> =
+        flowOf(drafts[articleId]?.toHeaderEntity())
+
     override suspend fun getArticleDraft(articleId: Long): ArticleDraftEntity? =
         drafts[articleId]
+
+    override suspend fun getArticleDraftHeader(articleId: Long): ArticleDraftHeaderEntity? =
+        drafts[articleId]?.toHeaderEntity()
 
     override suspend fun getArticleSections(articleId: Long): List<ArticleSectionEntity> =
         sections.filter { it.articleId == articleId }.sortedBy { it.orderIndex }
@@ -305,4 +313,21 @@ private class FakeArticleDao : ArticleDao {
     fun insertArticleSectionsBlocking(articleSections: List<ArticleSectionEntity>) {
         runBlocking { insertArticleSections(articleSections) }
     }
+
+    private fun ArticleDraftEntity.toSummaryEntity(): ArticleDraftSummaryEntity =
+        ArticleDraftSummaryEntity(
+            id = id,
+            phase = phase,
+            title = title,
+            topic = topic,
+            status = status,
+            updatedAt = updatedAt,
+        )
+
+    private fun ArticleDraftEntity.toHeaderEntity(): ArticleDraftHeaderEntity =
+        ArticleDraftHeaderEntity(
+            id = id,
+            phase = phase,
+            title = title,
+        )
 }

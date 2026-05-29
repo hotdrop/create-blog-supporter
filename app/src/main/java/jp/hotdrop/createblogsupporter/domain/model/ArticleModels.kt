@@ -35,6 +35,21 @@ data class ArticleDraft(
     val exportedAt: Long?,
 )
 
+data class ArticleDraftSummary(
+    val id: Long,
+    val phase: ArticlePhase,
+    val title: String,
+    val topic: String,
+    val status: ArticleStatus,
+    val updatedAt: Long,
+)
+
+data class ArticleDraftHeader(
+    val id: Long,
+    val phase: ArticlePhase,
+    val title: String,
+)
+
 data class ArticleSection(
     val id: Long,
     val articleId: Long,

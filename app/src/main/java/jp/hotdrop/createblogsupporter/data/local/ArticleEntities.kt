@@ -22,6 +22,21 @@ data class ArticleDraftEntity(
     val exportedAt: Long?,
 )
 
+data class ArticleDraftSummaryEntity(
+    val id: Long,
+    val phase: ArticlePhase,
+    val title: String,
+    val topic: String,
+    val status: ArticleStatus,
+    val updatedAt: Long,
+)
+
+data class ArticleDraftHeaderEntity(
+    val id: Long,
+    val phase: ArticlePhase,
+    val title: String,
+)
+
 @Entity(
     tableName = "article_sections",
     foreignKeys = [

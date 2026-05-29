@@ -12,7 +12,7 @@ import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionOperationResu
 import jp.hotdrop.createblogsupporter.domain.usecase.DeleteArticleSectionResult
 import jp.hotdrop.createblogsupporter.domain.usecase.DeleteArticleSectionUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.MoveArticleSectionUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdateArticleSectionHeadingUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class OutlineEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    observeArticleDraftUseCase: ObserveArticleDraftUseCase,
+    observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
     observeArticleSectionsUseCase: ObserveArticleSectionsUseCase,
     private val addArticleSectionUseCase: AddArticleSectionUseCase,
     private val updateArticleSectionHeadingUseCase: UpdateArticleSectionHeadingUseCase,
@@ -39,7 +39,7 @@ class OutlineEditViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            observeArticleDraftUseCase(articleId).collect { article ->
+            observeArticleDraftHeaderUseCase(articleId).collect { article ->
                 when {
                     article == null -> {
                         _uiState.update {

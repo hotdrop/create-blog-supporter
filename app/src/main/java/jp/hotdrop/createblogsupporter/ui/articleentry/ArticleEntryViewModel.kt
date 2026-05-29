@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -15,12 +15,12 @@ import javax.inject.Inject
 @HiltViewModel
 class ArticleEntryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    observeArticleDraftUseCase: ObserveArticleDraftUseCase,
+    observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
 
     val uiState: StateFlow<ArticleEntryUiState> =
-        observeArticleDraftUseCase(articleId)
+        observeArticleDraftHeaderUseCase(articleId)
             .map { article ->
                 if (article == null) {
                     ArticleEntryUiState.NotFound

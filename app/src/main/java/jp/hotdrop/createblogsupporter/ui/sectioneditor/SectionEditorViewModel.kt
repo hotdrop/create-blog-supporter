@@ -7,7 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ResetArticleSectionDraftToSavedUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.SaveArticleSectionContentUseCase
@@ -29,7 +29,7 @@ private const val DraftAutoSaveDelayMillis = 500L
 @HiltViewModel
 class SectionEditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    observeArticleDraftUseCase: ObserveArticleDraftUseCase,
+    observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
     observeArticleSectionUseCase: ObserveArticleSectionUseCase,
     private val updateArticleSectionDraftContentUseCase: UpdateArticleSectionDraftContentUseCase,
     private val saveArticleSectionContentUseCase: SaveArticleSectionContentUseCase,
@@ -47,7 +47,7 @@ class SectionEditorViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                observeArticleDraftUseCase(articleId),
+                observeArticleDraftHeaderUseCase(articleId),
                 observeArticleSectionUseCase(articleId, sectionId),
             ) { article, section ->
                 article to section

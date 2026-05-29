@@ -15,14 +15,20 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ArticleDao {
-    @Query("SELECT * FROM article_drafts ORDER BY updatedAt DESC")
-    fun observeArticleDrafts(): Flow<List<ArticleDraftEntity>>
+    @Query("SELECT id, phase, title, topic, status, updatedAt FROM article_drafts ORDER BY updatedAt DESC")
+    fun observeArticleDraftSummaries(): Flow<List<ArticleDraftSummaryEntity>>
 
     @Query("SELECT * FROM article_drafts WHERE id = :articleId")
     fun observeArticleDraft(articleId: Long): Flow<ArticleDraftEntity?>
 
+    @Query("SELECT id, phase, title FROM article_drafts WHERE id = :articleId")
+    fun observeArticleDraftHeader(articleId: Long): Flow<ArticleDraftHeaderEntity?>
+
     @Query("SELECT * FROM article_drafts WHERE id = :articleId")
     suspend fun getArticleDraft(articleId: Long): ArticleDraftEntity?
+
+    @Query("SELECT id, phase, title FROM article_drafts WHERE id = :articleId")
+    suspend fun getArticleDraftHeader(articleId: Long): ArticleDraftHeaderEntity?
 
     @Query("SELECT * FROM article_sections WHERE articleId = :articleId ORDER BY orderIndex ASC")
     suspend fun getArticleSections(articleId: Long): List<ArticleSectionEntity>

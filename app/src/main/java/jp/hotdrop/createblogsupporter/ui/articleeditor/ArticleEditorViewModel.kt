@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownResult
 import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownUseCase
@@ -26,7 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArticleEditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    observeArticleDraftUseCase: ObserveArticleDraftUseCase,
+    observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
     observeArticleSectionsUseCase: ObserveArticleSectionsUseCase,
     private val updatePhase2TitleUseCase: UpdatePhase2TitleUseCase,
     private val exportMarkdownUseCase: ExportMarkdownUseCase,
@@ -42,7 +42,7 @@ class ArticleEditorViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            observeArticleDraftUseCase(articleId).collect { article ->
+            observeArticleDraftHeaderUseCase(articleId).collect { article ->
                 when {
                     article == null -> {
                         _uiState.update {

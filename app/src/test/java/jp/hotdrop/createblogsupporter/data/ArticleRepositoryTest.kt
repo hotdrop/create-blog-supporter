@@ -2,6 +2,8 @@ package jp.hotdrop.createblogsupporter.data
 
 import jp.hotdrop.createblogsupporter.data.local.ArticleDao
 import jp.hotdrop.createblogsupporter.data.local.ArticleDraftEntity
+import jp.hotdrop.createblogsupporter.data.local.ArticleDraftHeaderEntity
+import jp.hotdrop.createblogsupporter.data.local.ArticleDraftSummaryEntity
 import jp.hotdrop.createblogsupporter.data.local.ArticleSectionEntity
 import jp.hotdrop.createblogsupporter.data.local.DeleteArticleSectionDaoResult
 import jp.hotdrop.createblogsupporter.data.repository.ArticleRepository
@@ -14,6 +16,7 @@ import jp.hotdrop.createblogsupporter.domain.usecase.SaveArticleSectionContentUs
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleResult
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleUseCase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -22,6 +25,35 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ArticleRepositoryTest {
+    @Test
+    fun observeArticleDraftSummaries_returnsListFieldsWithoutDetail() = runBlocking {
+        val dao = FakeArticleDao()
+        val phase1Id = dao.insertArticleDraft(
+            phase1Article().copy(
+                topic = "Phase1 topic",
+                detail = "目次案生成用の詳細",
+                updatedAt = 100,
+            ),
+        )
+        val phase2Id = dao.insertArticleDraft(
+            phase2Article().copy(
+                title = "Phase2 title",
+                topic = "Phase2 topic",
+                detail = "Phase2では表示しない詳細",
+                updatedAt = 200,
+            ),
+        )
+        val repository = ArticleRepository(dao)
+
+        val summaries = repository.observeArticleDraftSummaries().first()
+
+        assertEquals(listOf(phase2Id, phase1Id), summaries.map { it.id })
+        assertEquals(listOf(ArticlePhase.Phase2, ArticlePhase.Phase1), summaries.map { it.phase })
+        assertEquals(listOf("Phase2 title", ""), summaries.map { it.title })
+        assertEquals(listOf("Phase2 topic", "Phase1 topic"), summaries.map { it.topic })
+        assertEquals(listOf(200L, 100L), summaries.map { it.updatedAt })
+    }
+
     @Test
     fun adoptOutlineProposal_updatesPhaseTitleAndInitialSections_forPhase1Article() = runBlocking {
         val dao = FakeArticleDao()
@@ -477,14 +509,20 @@ private class FakeArticleDao : ArticleDao {
     private val drafts = mutableMapOf<Long, ArticleDraftEntity>()
     val sections = mutableListOf<ArticleSectionEntity>()
 
-    override fun observeArticleDrafts(): Flow<List<ArticleDraftEntity>> =
-        flowOf(drafts.values.toList())
+    override fun observeArticleDraftSummaries(): Flow<List<ArticleDraftSummaryEntity>> =
+        flowOf(drafts.values.sortedByDescending { it.updatedAt }.map { it.toSummaryEntity() })
 
     override fun observeArticleDraft(articleId: Long): Flow<ArticleDraftEntity?> =
         flowOf(drafts[articleId])
 
+    override fun observeArticleDraftHeader(articleId: Long): Flow<ArticleDraftHeaderEntity?> =
+        flowOf(drafts[articleId]?.toHeaderEntity())
+
     override suspend fun getArticleDraft(articleId: Long): ArticleDraftEntity? =
         drafts[articleId]
+
+    override suspend fun getArticleDraftHeader(articleId: Long): ArticleDraftHeaderEntity? =
+        drafts[articleId]?.toHeaderEntity()
 
     override suspend fun getArticleSections(articleId: Long): List<ArticleSectionEntity> =
         sections.filter { it.articleId == articleId }.sortedBy { it.orderIndex }
@@ -529,4 +567,21 @@ private class FakeArticleDao : ArticleDao {
     override suspend fun deleteArticleSection(articleSection: ArticleSectionEntity) {
         sections.removeAll { it.id == articleSection.id }
     }
+
+    private fun ArticleDraftEntity.toSummaryEntity(): ArticleDraftSummaryEntity =
+        ArticleDraftSummaryEntity(
+            id = id,
+            phase = phase,
+            title = title,
+            topic = topic,
+            status = status,
+            updatedAt = updatedAt,
+        )
+
+    private fun ArticleDraftEntity.toHeaderEntity(): ArticleDraftHeaderEntity =
+        ArticleDraftHeaderEntity(
+            id = id,
+            phase = phase,
+            title = title,
+        )
 }

@@ -3,7 +3,6 @@ package jp.hotdrop.createblogsupporter.domain.usecase
 import jp.hotdrop.createblogsupporter.data.export.MarkdownExportFile
 import jp.hotdrop.createblogsupporter.data.export.MarkdownFileWriter
 import jp.hotdrop.createblogsupporter.data.repository.ArticleRepository
-import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 import kotlinx.coroutines.CancellationException
@@ -35,7 +34,7 @@ class ExportMarkdownUseCase @Inject constructor(
     private val markdownFileWriter: MarkdownFileWriter,
 ) {
     suspend operator fun invoke(articleId: Long): ExportMarkdownResult {
-        val article = articleRepository.getArticleDraft(articleId)
+        val article = articleRepository.getArticleDraftHeader(articleId)
             ?: return ExportMarkdownResult.NotPhase2OrMissing
         if (article.phase != ArticlePhase.Phase2) {
             return ExportMarkdownResult.NotPhase2OrMissing
