@@ -31,6 +31,9 @@ description: Use when implementing or modifying local LLM features backed by Lit
 ## Prompt ルール
 - プロンプトは「ユーザー自身の言葉を尊重する」「完成本文を代筆しない」制約を含める。
 - タイトル案、目次案、章節概要、改善提案、校正チェックは用途ごとに入力型と出力型を分ける。
+- 章節相談では相談文単体を送らず、記事タイトル、元メモ、目次構成、現在章、必要最小限の他章文脈を構造化して渡す。
+- コンテキスト長を抑えるため、他章本文は丸ごと渡さず、見出し、状態、短い内容メモのカードに圧縮する。現在章の本文を他章より優先する。
+- 相談系プロンプトの文脈圧縮では、各入力の上限値と優先順位をUseCaseまたはプロンプト生成関数に明示する。
 - JSONなど構造化出力を要求する場合は、パース失敗時の復旧方針をUseCaseで扱う。
 - LLM応答は形式ゆれを前提にし、構造化パース失敗時もUseCase層でUIに渡せるアプリ独自候補へ復旧する。
 
@@ -41,6 +44,7 @@ description: Use when implementing or modifying local LLM features backed by Lit
 ## テストルール
 - LiteRT-LM SDKそのものは単体テストで実行しない。LLM client境界を差し替え、UseCaseの成功・失敗・キャンセル・パース失敗を検証する。
 - `content` へ直接反映しないこと、採用時に `draftContent` へ入ることをUseCaseテストで確認する。
+- 章節相談系UseCaseでは、相談文単体ではなく記事文脈付きプロンプトになること、他章文脈が圧縮されること、本文へ自動反映しないことをテストで確認する。
 
 ## 完了チェック
 - UI層にLiteRT-LM SDK型が出ていない。
