@@ -16,6 +16,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AssistChip
@@ -54,6 +56,10 @@ fun SectionEditorScreen(
     onResetDraftClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
     onToggleComparisonClick: () -> Unit,
+    onConsultationInputChanged: (String) -> Unit,
+    onAskLlmClick: () -> Unit,
+    onCancelLlmClick: () -> Unit,
+    onCopyConsultationAnswerClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -91,6 +97,10 @@ fun SectionEditorScreen(
                 onResetDraftClick = onResetDraftClick,
                 onUserApprovedChanged = onUserApprovedChanged,
                 onToggleComparisonClick = onToggleComparisonClick,
+                onConsultationInputChanged = onConsultationInputChanged,
+                onAskLlmClick = onAskLlmClick,
+                onCancelLlmClick = onCancelLlmClick,
+                onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
             )
         }
     }
@@ -146,6 +156,10 @@ private fun SectionEditorContent(
     onResetDraftClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
     onToggleComparisonClick: () -> Unit,
+    onConsultationInputChanged: (String) -> Unit,
+    onAskLlmClick: () -> Unit,
+    onCancelLlmClick: () -> Unit,
+    onCopyConsultationAnswerClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -175,6 +189,13 @@ private fun SectionEditorContent(
                 .semantics { contentDescription = "section_draft_content_input" },
             label = { Text(text = stringResource(R.string.section_draft_content_label)) },
             minLines = 10,
+        )
+        LlmConsultationContent(
+            uiState = uiState,
+            onConsultationInputChanged = onConsultationInputChanged,
+            onAskLlmClick = onAskLlmClick,
+            onCancelLlmClick = onCancelLlmClick,
+            onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -254,6 +275,127 @@ private fun SectionEditorContent(
         }
         if (uiState.showComparison) {
             ComparisonContent(rows = uiState.comparisonRows)
+        }
+    }
+}
+
+@Composable
+private fun LlmConsultationContent(
+    uiState: SectionEditorUiState,
+    onConsultationInputChanged: (String) -> Unit,
+    onAskLlmClick: () -> Unit,
+    onCancelLlmClick: () -> Unit,
+    onCopyConsultationAnswerClick: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.section_llm_consultation_heading),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(R.string.section_llm_consultation_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedTextField(
+            value = uiState.consultationInput,
+            onValueChange = onConsultationInputChanged,
+            enabled = !uiState.isConsultingLlm,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.consultationInput")
+                .semantics { contentDescription = "section_llm_consultation_input" },
+            label = { Text(text = stringResource(R.string.section_llm_consultation_label)) },
+            placeholder = { Text(text = stringResource(R.string.section_llm_consultation_placeholder)) },
+            minLines = 3,
+        )
+        ConsultationMessageText(message = uiState.consultationMessage)
+        if (uiState.isConsultingLlm) {
+            Card(shape = RoundedCornerShape(8.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        CircularProgressIndicator()
+                        Column {
+                            Text(
+                                text = stringResource(R.string.section_llm_processing_title),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                text = stringResource(R.string.section_llm_processing_message),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = onCancelLlmClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("sectionEditor.cancelLlmButton")
+                            .semantics { contentDescription = "cancel_section_llm_consultation" },
+                    ) {
+                        Text(text = stringResource(R.string.section_llm_cancel))
+                    }
+                }
+            }
+        } else {
+            Button(
+                onClick = onAskLlmClick,
+                enabled = uiState.consultationInput.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("sectionEditor.askLlmButton")
+                    .semantics { contentDescription = "ask_section_llm" },
+            ) {
+                Icon(imageVector = Icons.Default.Psychology, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.section_llm_ask),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+        if (uiState.consultationAnswer.isNotBlank()) {
+            Card(
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.testTag("sectionEditor.consultationAnswer"),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.section_llm_answer_heading),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = uiState.consultationAnswer,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    OutlinedButton(
+                        onClick = onCopyConsultationAnswerClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("sectionEditor.copyConsultationButton")
+                            .semantics { contentDescription = "copy_section_llm_answer" },
+                    ) {
+                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
+                        Text(
+                            text = stringResource(R.string.section_llm_copy_answer),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -379,7 +521,32 @@ private fun MessageText(message: SectionEditorMessage?) {
     }
 }
 
+@Composable
+private fun ConsultationMessageText(message: SectionEditorConsultationMessage?) {
+    val text = when (message) {
+        null -> null
+        SectionEditorConsultationMessage.EmptyQuestion -> stringResource(R.string.section_llm_empty_question)
+        SectionEditorConsultationMessage.ModelNotConfigured -> stringResource(R.string.section_llm_model_not_configured)
+        SectionEditorConsultationMessage.ModelInitializationFailed -> {
+            stringResource(R.string.section_llm_model_initialization_failed)
+        }
+        SectionEditorConsultationMessage.GenerationFailed -> stringResource(R.string.section_llm_generation_failed)
+        SectionEditorConsultationMessage.Cancelled -> stringResource(R.string.section_llm_cancelled)
+        SectionEditorConsultationMessage.Copied -> stringResource(R.string.section_llm_copied)
+    }
+    if (text != null) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 private val PreviewState = SectionEditorUiState(
+    articleTitle = "Compose Navigationの設計判断",
+    topic = "Navigation Composeで画面遷移を整理した話",
+    detail = "RouteとScreenを分けた理由、実装で詰まった点、次に改善したい点を書く。",
     heading = "背景と解決したかったこと",
     orderIndex = 0,
     content = "保存済み本文です。\nここまではユーザーが確認済みです。",
@@ -399,6 +566,10 @@ private fun SectionEditorReadyPreview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }
@@ -415,6 +586,10 @@ private fun SectionEditorLoadingPreview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }
@@ -431,6 +606,10 @@ private fun SectionEditorNotFoundPreview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }
@@ -447,6 +626,10 @@ private fun SectionEditorNotPhase2Preview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }
@@ -463,6 +646,10 @@ private fun SectionEditorSavingPreview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }
@@ -479,6 +666,10 @@ private fun SectionEditorComparisonPreview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }
@@ -498,6 +689,101 @@ private fun SectionEditorEmptyContentPreview() {
             onResetDraftClick = {},
             onUserApprovedChanged = {},
             onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorConsultationInputPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                consultationInput = "この章では何を書けばいいでしょうか？",
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorConsultingPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                consultationInput = "雑なメモを記事向けに整理する観点をください。",
+                isConsultingLlm = true,
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorConsultationAnswerPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                consultationInput = "この章では何を書けばいいでしょうか？",
+                consultationAnswer = "背景では、最初に困っていたこと、既存の構成で読みづらかった点、RouteとScreenを分ける判断につながった理由を順に整理すると書きやすいです。",
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorConsultationErrorPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                consultationInput = "清書の方向性を相談したいです。",
+                consultationMessage = SectionEditorConsultationMessage.ModelNotConfigured,
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onResetDraftClick = {},
+            onUserApprovedChanged = {},
+            onToggleComparisonClick = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
         )
     }
 }

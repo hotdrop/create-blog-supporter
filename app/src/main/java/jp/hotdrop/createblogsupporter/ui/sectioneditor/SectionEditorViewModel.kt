@@ -4,11 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
+import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
+import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionConsultationUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ResetArticleSectionDraftToSavedUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.SaveArticleSectionContentUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.UpdateArticleSectionDraftContentUseCase
@@ -16,8 +22,11 @@ import jp.hotdrop.createblogsupporter.domain.usecase.UpdateArticleSectionUserApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -29,29 +38,35 @@ private const val DraftAutoSaveDelayMillis = 500L
 @HiltViewModel
 class SectionEditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
-    observeArticleSectionUseCase: ObserveArticleSectionUseCase,
+    observeArticleDraftUseCase: ObserveArticleDraftUseCase,
+    observeArticleSectionsUseCase: ObserveArticleSectionsUseCase,
     private val updateArticleSectionDraftContentUseCase: UpdateArticleSectionDraftContentUseCase,
     private val saveArticleSectionContentUseCase: SaveArticleSectionContentUseCase,
     private val resetArticleSectionDraftToSavedUseCase: ResetArticleSectionDraftToSavedUseCase,
     private val updateArticleSectionUserApprovedUseCase: UpdateArticleSectionUserApprovedUseCase,
+    private val generateSectionConsultationUseCase: GenerateSectionConsultationUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
     private val sectionId: Long = checkNotNull(savedStateHandle["sectionId"])
     private var hasLocalDraftEdit = false
     private var draftAutoSaveJob: Job? = null
+    private var consultationJob: Job? = null
 
     private val _uiState = MutableStateFlow(SectionEditorUiState(isLoading = true))
     val uiState: StateFlow<SectionEditorUiState> = _uiState.asStateFlow()
 
+    private val _copyEvents = MutableSharedFlow<String>()
+    val copyEvents: SharedFlow<String> = _copyEvents.asSharedFlow()
+
     init {
         viewModelScope.launch {
             combine(
-                observeArticleDraftHeaderUseCase(articleId),
-                observeArticleSectionUseCase(articleId, sectionId),
-            ) { article, section ->
-                article to section
-            }.collect { (article, section) ->
+                observeArticleDraftUseCase(articleId),
+                observeArticleSectionsUseCase(articleId),
+            ) { article, sections ->
+                article to sections
+            }.collect { (article, sections) ->
+                val section = sections.firstOrNull { it.id == sectionId }
                 when {
                     article == null -> {
                         _uiState.update {
@@ -80,7 +95,7 @@ class SectionEditorViewModel @Inject constructor(
                         }
                     }
 
-                    else -> applySection(section)
+                    else -> applyArticleAndSection(article, section, sections)
                 }
             }
         }
@@ -233,16 +248,109 @@ class SectionEditorViewModel @Inject constructor(
         _uiState.update { it.copy(showComparison = !it.showComparison) }
     }
 
-    private fun applySection(section: ArticleSection) {
+    fun onConsultationInputChanged(value: String) {
+        _uiState.update {
+            it.copy(
+                consultationInput = value,
+                consultationMessage = null,
+            )
+        }
+    }
+
+    fun onAskLlmClick() {
+        val current = _uiState.value
+        if (current.isConsultingLlm) return
+        val question = current.consultationInput.trim()
+        if (question.isBlank()) {
+            _uiState.update { it.copy(consultationMessage = SectionEditorConsultationMessage.EmptyQuestion) }
+            return
+        }
+        consultationJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isConsultingLlm = true,
+                    consultationAnswer = "",
+                    consultationMessage = null,
+                )
+            }
+            val targetSection = SectionConsultationSectionContext(
+                orderIndex = current.orderIndex,
+                heading = current.heading,
+                savedContent = current.content,
+                draftContent = current.draftContent,
+                isTarget = true,
+            )
+            val outlineContext = current.outlineContext
+                .filterNot { it.orderIndex == current.orderIndex || it.isTarget }
+                .plus(targetSection)
+                .sortedBy { it.orderIndex }
+            when (
+                val result = generateSectionConsultationUseCase(
+                    SectionConsultationRequest(
+                        articleTitle = current.articleTitle,
+                        topic = current.topic,
+                        detail = current.detail,
+                        targetSection = targetSection,
+                        outlineContext = outlineContext,
+                        userQuestion = question,
+                    ),
+                )
+            ) {
+                is LlmSupportResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isConsultingLlm = false,
+                            consultationAnswer = result.value.answer,
+                            consultationMessage = null,
+                        )
+                    }
+                }
+
+                is LlmSupportResult.Failure -> showConsultationFailed(result.reason)
+            }
+        }
+    }
+
+    fun onCancelLlmClick() {
+        consultationJob?.cancel()
+        consultationJob = null
+        _uiState.update {
+            it.copy(
+                isConsultingLlm = false,
+                consultationMessage = SectionEditorConsultationMessage.Cancelled,
+            )
+        }
+    }
+
+    fun onCopyConsultationAnswerClick() {
+        val answer = _uiState.value.consultationAnswer
+        if (answer.isBlank()) return
+        viewModelScope.launch {
+            _copyEvents.emit(answer)
+            _uiState.update { it.copy(consultationMessage = SectionEditorConsultationMessage.Copied) }
+        }
+    }
+
+    private fun applyArticleAndSection(
+        article: ArticleDraft,
+        section: ArticleSection,
+        sections: List<ArticleSection>,
+    ) {
         _uiState.update {
             it.copy(
                 isLoading = false,
                 error = null,
+                articleTitle = article.title,
+                topic = article.topic,
+                detail = article.detail,
                 heading = section.heading,
                 orderIndex = section.orderIndex,
                 content = section.content,
                 draftContent = if (hasLocalDraftEdit) it.draftContent else section.draftContent,
                 userApproved = section.userApproved,
+                outlineContext = sections.map { sectionContext ->
+                    sectionContext.toConsultationContext(isTarget = sectionContext.id == sectionId)
+                },
             )
         }
     }
@@ -294,20 +402,43 @@ class SectionEditorViewModel @Inject constructor(
             )
         }
     }
+
+    private fun showConsultationFailed(reason: LlmSupportFailure) {
+        _uiState.update {
+            it.copy(
+                isConsultingLlm = false,
+                consultationMessage = when (reason) {
+                    LlmSupportFailure.ModelNotConfigured,
+                    LlmSupportFailure.ModelFileMissing,
+                    -> SectionEditorConsultationMessage.ModelNotConfigured
+                    LlmSupportFailure.InitializationFailed -> SectionEditorConsultationMessage.ModelInitializationFailed
+                    else -> SectionEditorConsultationMessage.GenerationFailed
+                },
+            )
+        }
+    }
 }
 
 data class SectionEditorUiState(
+    val articleTitle: String = "",
+    val topic: String = "",
+    val detail: String = "",
     val heading: String = "",
     val orderIndex: Int = 0,
     val content: String = "",
     val draftContent: String = "",
+    val outlineContext: List<SectionConsultationSectionContext> = emptyList(),
     val userApproved: Boolean = false,
     val isLoading: Boolean = false,
     val isSavingContent: Boolean = false,
     val isResettingDraft: Boolean = false,
     val isAutoSavingDraft: Boolean = false,
     val isUpdatingApproval: Boolean = false,
+    val isConsultingLlm: Boolean = false,
     val showComparison: Boolean = false,
+    val consultationInput: String = "",
+    val consultationAnswer: String = "",
+    val consultationMessage: SectionEditorConsultationMessage? = null,
     val message: SectionEditorMessage? = null,
     val error: SectionEditorError? = null,
 ) {
@@ -338,6 +469,15 @@ enum class SectionEditorMessage {
     MarkedApproved,
     MarkedUnapproved,
     OperationFailed,
+}
+
+enum class SectionEditorConsultationMessage {
+    EmptyQuestion,
+    ModelNotConfigured,
+    ModelInitializationFailed,
+    GenerationFailed,
+    Cancelled,
+    Copied,
 }
 
 enum class SectionEditorError {
@@ -377,3 +517,12 @@ private fun String.linesForComparison(): List<String> =
         .map { it.trimEnd() }
         .toList()
         .dropLastWhile { it.isEmpty() }
+
+private fun ArticleSection.toConsultationContext(isTarget: Boolean): SectionConsultationSectionContext =
+    SectionConsultationSectionContext(
+        orderIndex = orderIndex,
+        heading = heading,
+        savedContent = content,
+        draftContent = draftContent,
+        isTarget = isTarget,
+    )

@@ -6,6 +6,8 @@ import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
 import jp.hotdrop.createblogsupporter.domain.model.OutlineProposalRequest
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadStatus
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadingRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
 import jp.hotdrop.createblogsupporter.domain.model.SectionImprovementRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionSummaryRequest
 import jp.hotdrop.createblogsupporter.domain.model.TitleProposalRequest
@@ -13,6 +15,7 @@ import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmClient
 import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmRequest
 import jp.hotdrop.createblogsupporter.domain.usecase.CheckSectionProofreadingUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateOutlineProposalsUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionConsultationUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionImprovementSuggestionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionSummaryUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateTitleProposalsUseCase
@@ -246,6 +249,82 @@ class LlmSupportUseCasesTest {
         assertFalse(section.userApproved)
     }
 
+    @Test
+    fun generateSectionConsultation_returnsAnswerWithArticleContextWithoutChangingSectionContent() = runBlocking {
+        val section = section(
+            content = "保存済み本文",
+            draftContent = "編集中本文",
+        )
+        val client = FakeBlogSupportLlmClient("この章では背景、判断理由、実装前の困りごとを短く整理するとよいです。")
+
+        val result = GenerateSectionConsultationUseCase(client)(
+            consultationRequest(section = section),
+        ).successValue()
+
+        val prompt = client.requests.single().prompt
+        assertEquals("この章では背景、判断理由、実装前の困りごとを短く整理するとよいです。", result.answer)
+        assertTrue(prompt.contains("記事タイトル:"))
+        assertTrue(prompt.contains("Compose Navigationの設計判断"))
+        assertTrue(prompt.contains("目次構成:"))
+        assertTrue(prompt.contains("1. 設計方針（現在の章）"))
+        assertTrue(prompt.contains("ユーザー相談文:"))
+        assertTrue(prompt.contains("この章では何を書けばいいでしょうか？"))
+        assertEquals("保存済み本文", section.content)
+        assertEquals("編集中本文", section.draftContent)
+    }
+
+    @Test
+    fun generateSectionConsultation_truncatesOtherSectionBodyButKeepsTargetSectionBody() = runBlocking {
+        val targetDraft = "現在章の本文".repeat(120)
+        val otherDraft = "他章の長い本文".repeat(80) + "末尾は含めない"
+        val client = FakeBlogSupportLlmClient("提案です。")
+
+        GenerateSectionConsultationUseCase(client)(
+            consultationRequest(
+                section = section(content = "保存済み本文", draftContent = targetDraft),
+                outlineContext = listOf(
+                    sectionContext(
+                        orderIndex = 0,
+                        heading = "設計方針",
+                        savedContent = "保存済み本文",
+                        draftContent = targetDraft,
+                        isTarget = true,
+                    ),
+                    sectionContext(
+                        orderIndex = 1,
+                        heading = "実装メモ",
+                        savedContent = "",
+                        draftContent = otherDraft,
+                    ),
+                ),
+            ),
+        ).successValue()
+
+        val prompt = client.requests.single().prompt
+        assertTrue(prompt.contains(targetDraft.take(2400)))
+        assertTrue(prompt.contains(otherDraft.take(140)))
+        assertFalse(prompt.contains("末尾は含めない"))
+    }
+
+    @Test
+    fun generateSectionConsultation_convertsClientFailure() = runBlocking {
+        val result = GenerateSectionConsultationUseCase(
+            FakeBlogSupportLlmClient(failure = LlmSupportFailure.ModelNotConfigured),
+        )(
+            consultationRequest(),
+        )
+
+        assertEquals(LlmSupportFailure.ModelNotConfigured, result.failureReason())
+    }
+
+    @Test(expected = CancellationException::class)
+    fun generateSectionConsultation_rethrowsCancellation() = runBlocking {
+        GenerateSectionConsultationUseCase(FakeBlogSupportLlmClient(cancel = true))(
+            consultationRequest(),
+        )
+        Unit
+    }
+
     private fun section(
         content: String,
         draftContent: String,
@@ -266,6 +345,54 @@ class LlmSupportUseCasesTest {
             lastSavedAt = null,
             draftUpdatedAt = null,
         )
+
+    private fun consultationRequest(
+        section: ArticleSection = section(content = "保存済み本文", draftContent = "編集中本文"),
+        outlineContext: List<SectionConsultationSectionContext> = listOf(
+            sectionContext(
+                orderIndex = 0,
+                heading = "設計方針",
+                savedContent = "保存済み本文",
+                draftContent = "編集中本文",
+                isTarget = true,
+            ),
+            sectionContext(
+                orderIndex = 1,
+                heading = "実装メモ",
+                savedContent = "保存済みの他章",
+                draftContent = "",
+            ),
+        ),
+    ): SectionConsultationRequest =
+        SectionConsultationRequest(
+            articleTitle = "Compose Navigationの設計判断",
+            topic = "Navigation Compose",
+            detail = "RouteとScreenを分ける",
+            targetSection = sectionContext(
+                orderIndex = section.orderIndex,
+                heading = section.heading,
+                savedContent = section.content,
+                draftContent = section.draftContent,
+                isTarget = true,
+            ),
+            outlineContext = outlineContext,
+            userQuestion = "この章では何を書けばいいでしょうか？",
+        )
+
+    private fun sectionContext(
+        orderIndex: Int,
+        heading: String,
+        savedContent: String,
+        draftContent: String,
+        isTarget: Boolean = false,
+    ): SectionConsultationSectionContext =
+        SectionConsultationSectionContext(
+            orderIndex = orderIndex,
+            heading = heading,
+            savedContent = savedContent,
+            draftContent = draftContent,
+            isTarget = isTarget,
+        )
 }
 
 private fun <T> LlmSupportResult<T>.successValue(): T =
@@ -285,7 +412,10 @@ private class FakeBlogSupportLlmClient(
     private val failure: LlmSupportFailure? = null,
     private val cancel: Boolean = false,
 ) : BlogSupportLlmClient {
+    val requests = mutableListOf<BlogSupportLlmRequest>()
+
     override fun streamText(request: BlogSupportLlmRequest): Flow<String> {
+        requests += request
         if (cancel) {
             return flow { throw CancellationException("cancelled") }
         }

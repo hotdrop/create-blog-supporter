@@ -2,9 +2,20 @@ package jp.hotdrop.createblogsupporter.domain.usecase
 
 import jp.hotdrop.createblogsupporter.domain.model.OutlineProposalRequest
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadingRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
 import jp.hotdrop.createblogsupporter.domain.model.SectionImprovementRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionSummaryRequest
 import jp.hotdrop.createblogsupporter.domain.model.TitleProposalRequest
+
+private const val MaxArticleTitleLength = 120
+private const val MaxTopicLength = 160
+private const val MaxDetailLength = 400
+private const val MaxTargetSavedContentLength = 1200
+private const val MaxTargetDraftContentLength = 2400
+private const val MaxOtherSectionMemoLength = 140
+private const val MaxUserQuestionLength = 800
+private const val NearbySectionDistance = 2
 
 internal fun buildTitlePrompt(request: TitleProposalRequest): String =
     """
@@ -55,6 +66,52 @@ internal fun buildSectionSummaryPrompt(request: SectionSummaryRequest): String =
     この章節で扱う論点の概要案だけを日本語で返してください。完成本文の代筆は禁止です。
     """.trimIndent()
 
+internal fun buildSectionConsultationPrompt(request: SectionConsultationRequest): String {
+    val sortedSections = request.outlineContext.sortedBy { it.orderIndex }
+    val targetIndex = request.targetSection.orderIndex
+    val outline = sortedSections.joinToString(separator = "\n") { section ->
+        val marker = if (section.orderIndex == targetIndex || section.isTarget) "（現在の章）" else ""
+        "${section.orderIndex + 1}. ${section.heading.normalizePromptText()}$marker"
+    }.ifBlank {
+        "${request.targetSection.orderIndex + 1}. ${request.targetSection.heading.normalizePromptText()}（現在の章）"
+    }
+    val otherSections = sortedSections
+        .filterNot { it.orderIndex == targetIndex || it.isTarget }
+        .joinToString(separator = "\n") { section ->
+            buildOtherSectionContextLine(section, targetIndex, sortedSections.size)
+        }
+        .ifBlank { "他の章はまだありません。" }
+
+    return """
+    記事タイトル:
+    ${request.articleTitle.normalizePromptText().ifBlank { "未設定" }.limitPromptText(MaxArticleTitleLength)}
+
+    元メモ:
+    題材: ${request.topic.normalizePromptText().ifBlank { "未入力" }.limitPromptText(MaxTopicLength)}
+    詳細: ${request.detail.normalizePromptText().ifBlank { "未入力" }.limitPromptText(MaxDetailLength)}
+
+    目次構成:
+    $outline
+
+    現在の章:
+    見出し: ${request.targetSection.heading.normalizePromptText().ifBlank { "未設定" }}
+    保存済み本文:
+    ${request.targetSection.savedContent.normalizePromptText().ifBlank { "未入力" }.limitPromptText(MaxTargetSavedContentLength)}
+    編集中本文:
+    ${request.targetSection.draftContent.normalizePromptText().ifBlank { "未入力" }.limitPromptText(MaxTargetDraftContentLength)}
+
+    他章コンテキスト:
+    $otherSections
+
+    ユーザー相談文:
+    ${request.userQuestion.normalizePromptText().limitPromptText(MaxUserQuestionLength)}
+
+    あなたはテックブログ執筆の相談相手です。ユーザー自身の言葉を尊重してください。
+    完成本文を確定するのではなく、現在の章で扱う観点、清書の方向性、足すとよい論点、読者に伝わりにくい箇所を提案してください。
+    回答は本文へ自動反映されません。ユーザーが判断しやすいように、日本語で簡潔に返してください。
+    """.trimIndent()
+}
+
 internal fun buildSectionImprovementPrompt(request: SectionImprovementRequest): String =
     """
     記事タイトル:
@@ -74,6 +131,32 @@ internal fun buildSectionImprovementPrompt(request: SectionImprovementRequest): 
     SUGGESTION: 提案タイトル
     DETAIL: 提案理由
     """.trimIndent()
+
+private fun buildOtherSectionContextLine(
+    section: SectionConsultationSectionContext,
+    targetIndex: Int,
+    sectionCount: Int,
+): String {
+    val content = section.draftContent.ifBlank { section.savedContent }.normalizePromptText()
+    val state = when {
+        section.draftContent.isNotBlank() -> "編集中あり"
+        section.savedContent.isNotBlank() -> "保存済みあり"
+        else -> "未入力"
+    }
+    val includeMemo = sectionCount <= 5 || kotlin.math.abs(section.orderIndex - targetIndex) <= NearbySectionDistance
+    val memo = if (includeMemo && content.isNotBlank()) {
+        " / 内容メモ: ${content.limitPromptText(MaxOtherSectionMemoLength)}"
+    } else {
+        ""
+    }
+    return "${section.orderIndex + 1}. ${section.heading.normalizePromptText()} / 状態: $state$memo"
+}
+
+private fun String.normalizePromptText(): String =
+    trim().replace(Regex("""\s+"""), " ")
+
+private fun String.limitPromptText(maxLength: Int): String =
+    if (length <= maxLength) this else take(maxLength)
 
 internal fun buildProofreadingPrompt(request: ProofreadingRequest): String =
     """

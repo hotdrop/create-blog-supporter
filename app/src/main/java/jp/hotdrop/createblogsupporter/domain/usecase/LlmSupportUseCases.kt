@@ -6,6 +6,8 @@ import jp.hotdrop.createblogsupporter.domain.model.OutlineProposal
 import jp.hotdrop.createblogsupporter.domain.model.OutlineProposalRequest
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadingCheckResult
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadingRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
+import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationResponse
 import jp.hotdrop.createblogsupporter.domain.model.SectionImprovementRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionImprovementSuggestion
 import jp.hotdrop.createblogsupporter.domain.model.SectionSummaryProposal
@@ -48,6 +50,17 @@ class GenerateSectionSummaryUseCase @Inject constructor(
             llmClient = llmClient,
             prompt = buildSectionSummaryPrompt(request),
             parser = { text -> SectionSummaryProposal(summary = text.trim()).takeIf { it.summary.isNotBlank() } },
+        )
+}
+
+class GenerateSectionConsultationUseCase @Inject constructor(
+    private val llmClient: BlogSupportLlmClient,
+) {
+    suspend operator fun invoke(request: SectionConsultationRequest): LlmSupportResult<SectionConsultationResponse> =
+        generateAndParse(
+            llmClient = llmClient,
+            prompt = buildSectionConsultationPrompt(request),
+            parser = { text -> SectionConsultationResponse(answer = text.trim()).takeIf { it.answer.isNotBlank() } },
         )
 }
 

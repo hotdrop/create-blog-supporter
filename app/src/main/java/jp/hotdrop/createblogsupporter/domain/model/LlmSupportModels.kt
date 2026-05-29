@@ -35,6 +35,27 @@ data class SectionSummaryProposal(
     val summary: String,
 )
 
+data class SectionConsultationRequest(
+    val articleTitle: String,
+    val topic: String,
+    val detail: String,
+    val targetSection: SectionConsultationSectionContext,
+    val outlineContext: List<SectionConsultationSectionContext>,
+    val userQuestion: String,
+)
+
+data class SectionConsultationSectionContext(
+    val orderIndex: Int,
+    val heading: String,
+    val savedContent: String,
+    val draftContent: String,
+    val isTarget: Boolean = false,
+)
+
+data class SectionConsultationResponse(
+    val answer: String,
+)
+
 data class SectionImprovementRequest(
     val articleTitle: String,
     val sectionHeading: String,
