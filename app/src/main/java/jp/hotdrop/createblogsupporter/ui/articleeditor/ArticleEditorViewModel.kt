@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
+import jp.hotdrop.createblogsupporter.domain.model.ArticleCharacterCountStatus
+import jp.hotdrop.createblogsupporter.domain.model.articleCharacterCountStatus
+import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownResult
@@ -228,6 +231,11 @@ data class ArticleEditorUiState(
     val message: ArticleEditorMessage? = null,
     val error: ArticleEditorError? = null,
 ) {
+    val totalCharacterCount: Int
+        get() = sections.sumOf { it.characterCount }
+
+    val characterCountStatus: ArticleCharacterCountStatus
+        get() = articleCharacterCountStatus(totalCharacterCount)
 }
 
 data class ArticleEditorSectionUiState(
@@ -237,7 +245,13 @@ data class ArticleEditorSectionUiState(
     val content: String,
     val draftContent: String,
     val userApproved: Boolean,
-)
+) {
+    val characterCount: Int
+        get() = countEditableContentCharacters(
+            content = content,
+            draftContent = draftContent,
+        )
+}
 
 sealed interface ArticleEditorMessage {
     data object TitleSaved : ArticleEditorMessage

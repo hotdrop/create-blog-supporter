@@ -11,6 +11,7 @@ import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
 import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
 import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
+import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionConsultationUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
@@ -447,6 +448,12 @@ data class SectionEditorUiState(
 
     val comparisonRows: List<SectionComparisonRow>
         get() = buildComparisonRows(content, draftContent)
+
+    val currentCharacterCount: Int
+        get() = countEditableContentCharacters(
+            content = content,
+            draftContent = draftContent,
+        )
 }
 
 data class SectionComparisonRow(

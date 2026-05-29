@@ -44,6 +44,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import jp.hotdrop.createblogsupporter.R
+import jp.hotdrop.createblogsupporter.domain.model.ArticleCharacterCountStatus
+import jp.hotdrop.createblogsupporter.domain.model.IdealArticleCharacterCount
+import jp.hotdrop.createblogsupporter.domain.model.MaxArticleCharacterCount
 import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -197,6 +200,7 @@ private fun ArticleEditorContent(
             }
         }
         MessageText(message = uiState.message)
+        ArticleCharacterCountSummary(uiState = uiState)
 
         // 目次
         Row(
@@ -324,7 +328,73 @@ private fun ArticleEditorSectionCard(
                     userApproved = section.userApproved,
                     onClick = onClick,
                 )
+                AssistChip(
+                    onClick = onClick,
+                    label = {
+                        Text(
+                            text = stringResource(
+                                R.string.section_character_count_format,
+                                section.characterCount,
+                            ),
+                        )
+                    },
+                    modifier = Modifier.testTag("articleEditor.sectionCharacterCount.${section.id}"),
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun ArticleCharacterCountSummary(uiState: ArticleEditorUiState) {
+    val contentColor = when (uiState.characterCountStatus) {
+        ArticleCharacterCountStatus.UnderIdeal -> MaterialTheme.colorScheme.onSurfaceVariant
+        ArticleCharacterCountStatus.IdealRange -> MaterialTheme.colorScheme.primary
+        ArticleCharacterCountStatus.OverLimit -> MaterialTheme.colorScheme.error
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(
+                R.string.article_total_character_count_format,
+                uiState.totalCharacterCount,
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            color = contentColor,
+            modifier = Modifier.testTag("articleEditor.totalCharacterCount"),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AssistChip(
+                onClick = {},
+                label = {
+                    Text(
+                        text = stringResource(
+                            R.string.article_ideal_character_count_format,
+                            IdealArticleCharacterCount,
+                        ),
+                    )
+                },
+                colors = AssistChipDefaults.assistChipColors(labelColor = contentColor),
+                border = AssistChipDefaults.assistChipBorder(
+                    enabled = true,
+                    borderColor = contentColor,
+                ),
+            )
+            AssistChip(
+                onClick = {},
+                label = {
+                    Text(
+                        text = stringResource(
+                            R.string.article_max_character_count_format,
+                            MaxArticleCharacterCount,
+                        ),
+                    )
+                },
+                colors = AssistChipDefaults.assistChipColors(labelColor = contentColor),
+                border = AssistChipDefaults.assistChipBorder(
+                    enabled = true,
+                    borderColor = contentColor,
+                ),
+            )
         }
     }
 }
@@ -416,6 +486,25 @@ private val PreviewSections = listOf(
     ),
 )
 
+private val OverLimitPreviewSections = listOf(
+    ArticleEditorSectionUiState(
+        id = 1,
+        heading = "背景と解決したかったこと",
+        orderIndex = 0,
+        content = "",
+        draftContent = "長い本文".repeat(1200),
+        userApproved = false,
+    ),
+    ArticleEditorSectionUiState(
+        id = 2,
+        heading = "実装で詰まったポイント",
+        orderIndex = 1,
+        content = "",
+        draftContent = "追加の本文".repeat(800),
+        userApproved = false,
+    ),
+)
+
 @Preview(showBackground = true)
 @Composable
 private fun ArticleEditorReadyPreview() {
@@ -491,6 +580,27 @@ private fun ArticleEditorExportBlockedPreview() {
                 title = "Compose Navigation を実装から理解する",
                 sections = PreviewSections,
                 message = ArticleEditorMessage.ExportUnapprovedSections(1),
+            ),
+            onBack = {},
+            onTitleChanged = {},
+            onSaveTitleClick = {},
+            onExportMarkdownClick = {},
+            onEditOutlineClick = {},
+            onOpenPreviewClick = {},
+            onSectionClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ArticleEditorOverLimitPreview() {
+    CreateBlogSupporterTheme {
+        ArticleEditorScreen(
+            uiState = ArticleEditorUiState(
+                articleId = 1,
+                title = "Compose Navigation を実装から理解する",
+                sections = OverLimitPreviewSections,
             ),
             onBack = {},
             onTitleChanged = {},

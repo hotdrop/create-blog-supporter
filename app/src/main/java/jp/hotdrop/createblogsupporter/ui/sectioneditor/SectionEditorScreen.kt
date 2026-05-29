@@ -190,6 +190,15 @@ private fun SectionEditorContent(
             label = { Text(text = stringResource(R.string.section_draft_content_label)) },
             minLines = 10,
         )
+        Text(
+            text = stringResource(
+                R.string.current_section_character_count_format,
+                uiState.currentCharacterCount,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag("sectionEditor.currentCharacterCount"),
+        )
         LlmConsultationContent(
             uiState = uiState,
             onConsultationInputChanged = onConsultationInputChanged,
