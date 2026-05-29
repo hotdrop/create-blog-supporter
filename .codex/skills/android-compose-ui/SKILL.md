@@ -19,13 +19,20 @@ description: This app's Jetpack Compose UI implementation and modification skill
 - 最低限、通常・ローディング・エラー・空状態・ダイアログ表示を分けて Preview する。
 - `UiState` の表示に影響する状態値（例: `isSaving`, `messageResId`, `errorMessageResId`, 空リスト）は個別 Preview で網羅する。
 - 「1つだけ動く Preview」を禁止し、画面で取りうる主要状態を再現できる Preview セットにする。
+- UI追加・変更時は、ダーク固定前提、System Bar視認性、長時間Loading、中断導線、入力中のちらつき、状態チップの視認性を必要に応じて確認する。
 
 ## UI 品質ルール
+- アプリは端末設定に追従しないダークテーマ固定として扱う。
+- UIテーマ変更時はCompose `ColorScheme`、起動直後のXMLテーマ、StatusBar/NavigationBarアイコン明暗を合わせて確認する。
 - 重要操作に `testTag` を付け、将来のUI検証やアクセシビリティ確認で識別できるようにする。
 - `testTag` は表示文言やリソース名に依存させず、ユーザー操作・検証対象として安定した意味の名前にする。
 - `testTag` の形式は `<screen>.<element>` を基本とし、状態やダイアログ内要素は `<screen>.<area>.<element>` とする。
 - `testTag` の例: `articleList.createButton`, `phase1Edit.generateOutlineButton`, `outlineProposal.adoptButton`。
 - クリック可能要素には `contentDescription` と適切な Semantics を付与する。
+- 重要な確認状態は文字列だけに頼らず、MaterialThemeの意味色、アイコン、枠線など複数の視覚手がかりで示す。
+- 高頻度更新される内部状態を、本文入力欄近くのレイアウト増減に直結させない。
+- 自動保存の成功通知は常時表示せず、失敗時や明示保存時のメッセージを優先する。
+- 長文プレビューは編集フォームにインライン常設せず、保存済み本文確認用の独立画面または明示的な表示切り替えにする。
 - 再利用可能な部品は `ui/components/` に抽出し、画面固有ロジックを混ぜない。
 - レイアウト肥大化時は private Composable を分割し、1ファイルの責務を絞る。
 
@@ -35,3 +42,4 @@ description: This app's Jetpack Compose UI implementation and modification skill
 - 条件分岐 UI を含む Preview が揃っている。
 - 文字列・色の直書きがなく、寸法はテーマ・定数・画面固有値のいずれかとして意図が明確である。
 - Preview が「通常・ローディング・エラー・空状態 + 画面固有状態」を網羅している。
+- ダーク固定前提の表示、System Bar、入力中のレイアウト安定性、確認状態の視認性が変更内容に応じて確認されている。

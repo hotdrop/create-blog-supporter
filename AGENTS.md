@@ -37,12 +37,6 @@ LLMは本文生成の主体ではなく、構成、提案、校正を支援す�
 - 出力順は章節の `orderIndex` に従う。
 - 出力できない理由はユーザー向けメッセージとして表示し、内部ログや例外詳細とは分離する。
 
-## LiteRT-LM実装ルール
-- LiteRT-LM SDK型やEngine管理はdata層またはinfrastructure層に閉じ込める。
-- ViewModelとUIはアプリ独自のrequest/result型、UiState、Flowのみを扱う。
-- `docs/DesignDocument.md` にある `./LocalLLMSample` は、実体に合わせて `docs/LocalLLMSample/` を参照する。
-- 表記は `LiteRT-LM` に統一する。既存資料の `LiteRM` や `LiteRT` 表記は同SDKを指す文脈でも新規記述では使わない。
-
 ## 不変アーキテクチャ方針
 - アーキテクチャ: MVVM
 - UI: Jetpack Compose (Material 3)
@@ -64,5 +58,6 @@ LLMは本文生成の主体ではなく、構成、提案、校正を支援す�
 - テスト設計
   - ViewレイヤーはPreviewを必ず全パターン作成することでテスト不要とする。ViewModelもテストコードは無し
   - それ以外のレイヤー(Model, UseCase, Repository等)で複雑なロジックがある場合はテストコードを書く
+- 同一variantを触る `compileDebugKotlin` と `testDebugUnitTest` は、Kotlin増分コンパイルキャッシュ競合を避けるため直列実行する。
 - 例外は握りつぶさず、ユーザー向け表示とログを分離する
 - 実装後、既存のユニットテストは必ず実施する。
