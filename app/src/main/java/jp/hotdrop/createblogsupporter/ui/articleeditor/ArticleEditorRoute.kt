@@ -2,7 +2,6 @@ package jp.hotdrop.createblogsupporter.ui.articleeditor
 
 import android.content.ClipData
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -10,6 +9,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.collectLatest
 import jp.hotdrop.createblogsupporter.R
+import androidx.core.net.toUri
 
 @Composable
 fun ArticleEditorRoute(
@@ -25,7 +25,7 @@ fun ArticleEditorRoute(
         viewModel.shareEvents.collectLatest { event ->
             when (event) {
                 is ArticleEditorShareEvent.ShareMarkdown -> {
-                    val uri = Uri.parse(event.uriString)
+                    val uri = event.uriString.toUri()
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_STREAM, uri)

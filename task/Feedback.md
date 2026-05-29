@@ -41,3 +41,25 @@
 - AGENTS.md: モデル配置規約を恒久ルールにするなら追記候補。
 - .codex/skills/md-doc-viewer/SKILL.md: 該当なし。
 - docs/README/task/tests など: READMEまたはdocsに `filesDir/models/blog-supporter.litertlm` の配置手順、モデル未配置時の期待動作、LLM応答フォーマットを追記するとよい。
+
+# 2026/5/29 12:30 フィードバック
+
+## 作業内容
+- アプリ全体を端末設定に関係なくダークテーマ固定にした。
+- ComposeのColorScheme、起動時Windowテーマ、StatusBar/NavigationBarのSystem UIスタイルを暗色前提へ揃えた。
+- `./gradlew :app:compileDebugKotlin`、`./gradlew :app:testDebugUnitTest`、`./gradlew :app:assembleDebug` で検証した。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: ダーク固定時のSystem Bar方針が既存設計に明記されておらず、ComposeテーマとXMLテーマの両方を確認して判断する必要があった。
+- 改善した方がよいルール・手順: UIテーマ変更では、Compose ColorSchemeと起動直後のXMLテーマ、System Barアイコン明暗を同時に確認する手順を残すとよい。
+- 追加した方がよいルール・手順: 個人利用アプリとしてライト/ダーク追従を不要にする場合は、端末設定に追従しない固定テーマであることをREADMEや設計メモに明記しておくとよい。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: 実機確認項目として「ライトモード端末でもアプリは暗色」「StatusBar/NavigationBarのアイコンが見える」をUI検証メモに追加する価値がある。
+
+## 分類
+- タスク固有: 今回は保存ロジックや画面構造を変更せず、テーマとSystem Bar表示だけに限定した。
+- 恒久対応候補: このアプリをダーク固定で運用する方針は、今後のUI追加時にも色選定やPreview確認の前提になる。
+
+## 更新先候補
+- AGENTS.md: ダーク固定を恒久ルールにするなら追記候補。
+- .codex/skills/md-doc-viewer/SKILL.md: 該当なし。
+- docs/README/task/tests など: READMEまたはUI検証メモにSystem Bar表示確認の観点を追記するとよい。

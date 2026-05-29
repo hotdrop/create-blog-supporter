@@ -180,6 +180,7 @@ private fun ArticleMemoForm(
             singleLine = false,
             minLines = 6,
         )
+        Spacer(modifier = Modifier.height(16.dp))
         MessageText(message = uiState.message)
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -209,6 +210,7 @@ private fun ArticleMemoForm(
                 Text(text = stringResource(R.string.cancel))
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = onSaveClick,
             enabled = !uiState.isSaving,
@@ -225,7 +227,7 @@ private fun ArticleMemoForm(
                 )
                 Text(
                     text = stringResource(R.string.save),
-                    modifier = Modifier.padding(start = 8.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                 )
             }
         }
