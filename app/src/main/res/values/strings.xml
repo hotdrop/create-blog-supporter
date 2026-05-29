@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CreateBlogSupporter</string>
+    <string name="app_name">ブログサポ</string>
     <string name="article_list_title">記事メモ</string>
     <string name="article_list_empty_title">まだ記事メモがありません</string>
     <string name="article_list_empty_message">書いてみたい題材を保存すると、ここに表示されます。</string>
