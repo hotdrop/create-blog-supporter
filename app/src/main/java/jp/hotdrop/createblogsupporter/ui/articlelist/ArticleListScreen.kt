@@ -15,8 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -174,13 +177,9 @@ private fun ArticleListCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AssistChip(
+                ArticlePhaseChip(
+                    article = article,
                     onClick = onClick,
-                    label = {
-                        Text(
-                            text = article.phaseLabel(),
-                        )
-                    },
                 )
                 Text(
                     text = if (article.isComplete()) {
@@ -210,6 +209,39 @@ private fun ArticleListCard(
 }
 
 @Composable
+private fun ArticlePhaseChip(
+    article: ArticleListItemUiState,
+    onClick: () -> Unit,
+) {
+    val chipColors = article.phaseChipColors()
+    AssistChip(
+        onClick = onClick,
+        label = {
+            Text(text = article.phaseLabel())
+        },
+        leadingIcon = if (article.isComplete()) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                )
+            }
+        } else {
+            null
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = chipColors.container,
+            labelColor = chipColors.content,
+            leadingIconContentColor = chipColors.content,
+        ),
+        border = AssistChipDefaults.assistChipBorder(
+            enabled = true,
+            borderColor = chipColors.border,
+        ),
+    )
+}
+
+@Composable
 private fun ArticleListItemUiState.phaseLabel(): String =
     if (isComplete()) {
         stringResource(R.string.article_complete_label)
@@ -222,6 +254,40 @@ private fun ArticleListItemUiState.phaseLabel(): String =
 
 private fun ArticleListItemUiState.isComplete(): Boolean =
     phase == ArticlePhase.Phase2 && allSectionsApproved
+
+@Composable
+private fun ArticleListItemUiState.phaseChipColors(): PhaseChipColors =
+    if (isComplete()) {
+        PhaseChipColors(
+            container = CompleteChipContainer,
+            content = CompleteChipContent,
+            border = CompleteChipBorder,
+        )
+    } else {
+        when (phase) {
+            ArticlePhase.Phase1 -> PhaseChipColors(
+                container = MaterialTheme.colorScheme.secondaryContainer,
+                content = MaterialTheme.colorScheme.onSecondaryContainer,
+                border = MaterialTheme.colorScheme.secondary,
+            )
+
+            ArticlePhase.Phase2 -> PhaseChipColors(
+                container = MaterialTheme.colorScheme.tertiaryContainer,
+                content = MaterialTheme.colorScheme.onTertiaryContainer,
+                border = MaterialTheme.colorScheme.tertiary,
+            )
+        }
+    }
+
+private data class PhaseChipColors(
+    val container: Color,
+    val content: Color,
+    val border: Color,
+)
+
+private val CompleteChipContainer = Color(0xFF0F4D2F)
+private val CompleteChipContent = Color(0xFFA7F3C1)
+private val CompleteChipBorder = Color(0xFF4ADE80)
 
 @Preview(showBackground = true)
 @Composable
