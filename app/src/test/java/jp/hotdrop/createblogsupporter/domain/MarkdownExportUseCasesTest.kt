@@ -322,6 +322,9 @@ private class FakeArticleDao : ArticleDao {
             topic = topic,
             status = status,
             updatedAt = updatedAt,
+            allSectionsApproved = phase == ArticlePhase.Phase2 &&
+                sections.any { it.articleId == id } &&
+                sections.none { it.articleId == id && !it.userApproved },
         )
 
     private fun ArticleDraftEntity.toHeaderEntity(): ArticleDraftHeaderEntity =

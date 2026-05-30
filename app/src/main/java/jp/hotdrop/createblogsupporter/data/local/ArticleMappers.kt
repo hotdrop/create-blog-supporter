@@ -26,6 +26,7 @@ fun ArticleDraftSummaryEntity.toDomain(): ArticleDraftSummary =
         topic = topic,
         status = status,
         updatedAt = updatedAt,
+        allSectionsApproved = allSectionsApproved,
     )
 
 fun ArticleDraftHeaderEntity.toDomain(): ArticleDraftHeader =

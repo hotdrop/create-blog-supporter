@@ -77,3 +77,43 @@
 - AGENTS.md: 追加不要。既存の `content` / `draftContent` 分離ルールで足りている。
 - .codex/skills/android-compose-ui/SKILL.md: 複数画面に同種カードがある場合の横断確認観点を補足する候補。
 - docs/README/task/tests など: 章カード UI の共通方針を仕様メモへ残す候補。
+
+# 2026/5/30 11:08 フィードバック
+
+## 作業内容
+- 記事一覧の phase2 表示を、全章節が確認済みの場合だけ「執筆」から「完了」に切り替える派生表示へ更新した。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: 一覧の見た目変更でも、判定元は章節テーブルにあり、DAOサマリ、ドメインモデル、UiState、Preview、Fake DAOを横断更新する必要があった。
+- 改善した方がよいルール・手順: 記事一覧に章節由来の状態を出す時は、DB永続ステータスを更新するのか、一覧専用の派生状態にするのかを先に決めると影響範囲を抑えやすい。
+- 追加した方がよいルール・手順: Roomのサマリクエリに派生Booleanを追加する場合は、実DBクエリとFake DAOの判定条件を同じテストケースで固定するとよい。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: 「完了」はArticleStatusではなく全章節確認済みの一覧表示である、というUI仕様をタスクメモに残す余地がある。
+
+## 分類
+- タスク固有: 記事一覧の完了表示対応に伴う作業記録。
+- 恒久対応候補: 一覧サマリに章節由来の派生状態を追加する時の判断基準とFake DAO同期。
+
+## 更新先候補
+- AGENTS.md: 追加不要。恒久ルールとしては既存の確認済み・保存済み本文ルールで足りている。
+- .codex/skills/android-room-persistence/SKILL.md: サマリクエリの派生状態とFake DAOの判定同期を補足する候補。
+- docs/README/task/tests など: 完了表示の意味をUI仕様メモへ残す候補。
+
+# 2026/5/30 11:27 フィードバック
+
+## 作業内容
+- Android CLIをこのプロジェクトで効率的に使うため、`AGENTS.md` に利用導線を追加し、`.codex/skills/android-cli-usage/SKILL.md` を新規作成した。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: Android CLIはホーム配下のanalyticsへ書き込むため、Codex sandboxでは通常実行が失敗し、承認付き実行が必要になる場合があった。
+- 改善した方がよいルール・手順: Android CLIを使う前に、常用ではなく最新仕様確認やAndroid定型操作に限定する判断基準を読む流れにすると、不要な外部参照やログ増加を避けやすい。
+- 追加した方がよいルール・手順: Android CLIの環境パス、バージョン、SDK位置、sandbox承認が必要になり得る点をプロジェクトローカルskillに残すと、次回以降の確認コストを下げられる。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: コード変更を伴わないルール整備ではGradleテストを省略し、Markdown/frontmatterとgit diff確認を検証手順として明記するとよい。
+
+## 分類
+- タスク固有: Android CLI運用ルール整備に伴う作業記録。
+- 恒久対応候補: Android CLIを使う場面・使わない場面、CLI出力の要約方針、sandbox承認が必要になり得る点。
+
+## 更新先候補
+- AGENTS.md: Android CLI利用時に `.codex/skills/android-cli-usage/SKILL.md` を読む導線を反映済み。
+- .codex/skills/android-cli-usage/SKILL.md: Android CLIの利用判断、実行ルール、環境情報を反映済み。
+- docs/README/task/tests など: 現時点では追加不要。Android CLIを使った具体的な開発手順が増えた場合に、必要な検証例だけを追加する候補。

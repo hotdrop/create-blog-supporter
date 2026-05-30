@@ -43,6 +43,7 @@ data class ArticleListItemUiState(
     val topic: String,
     val status: ArticleStatus,
     val updatedAt: Long,
+    val allSectionsApproved: Boolean,
 )
 
 private fun ArticleDraftSummary.toArticleListItemUiState(): ArticleListItemUiState =
@@ -53,4 +54,5 @@ private fun ArticleDraftSummary.toArticleListItemUiState(): ArticleListItemUiSta
         topic = topic,
         status = status,
         updatedAt = updatedAt,
+        allSectionsApproved = allSectionsApproved,
     )

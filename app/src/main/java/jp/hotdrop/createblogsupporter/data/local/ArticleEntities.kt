@@ -29,6 +29,7 @@ data class ArticleDraftSummaryEntity(
     val topic: String,
     val status: ArticleStatus,
     val updatedAt: Long,
+    val allSectionsApproved: Boolean,
 )
 
 data class ArticleDraftHeaderEntity(

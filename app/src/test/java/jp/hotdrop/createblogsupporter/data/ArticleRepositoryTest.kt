@@ -55,6 +55,37 @@ class ArticleRepositoryTest {
     }
 
     @Test
+    fun observeArticleDraftSummaries_marksAllSectionsApprovedOnlyForCompletePhase2Articles() = runBlocking {
+        val dao = FakeArticleDao()
+        val completePhase2Id = dao.insertArticleDraft(phase2Article().copy(updatedAt = 400))
+        val incompletePhase2Id = dao.insertArticleDraft(phase2Article().copy(updatedAt = 300))
+        val emptyPhase2Id = dao.insertArticleDraft(phase2Article().copy(updatedAt = 200))
+        val phase1Id = dao.insertArticleDraft(phase1Article().copy(updatedAt = 100))
+        dao.insertArticleSections(
+            listOf(
+                section(articleId = completePhase2Id, heading = "背景", orderIndex = 0, userApproved = true),
+                section(articleId = completePhase2Id, heading = "まとめ", orderIndex = 1, userApproved = true),
+                section(articleId = incompletePhase2Id, heading = "背景", orderIndex = 0, userApproved = true),
+                section(articleId = incompletePhase2Id, heading = "まとめ", orderIndex = 1, userApproved = false),
+                section(articleId = phase1Id, heading = "目次案", orderIndex = 0, userApproved = true),
+            ),
+        )
+        val repository = ArticleRepository(dao)
+
+        val summaries = repository.observeArticleDraftSummaries().first()
+
+        assertEquals(
+            mapOf(
+                completePhase2Id to true,
+                incompletePhase2Id to false,
+                emptyPhase2Id to false,
+                phase1Id to false,
+            ),
+            summaries.associate { it.id to it.allSectionsApproved },
+        )
+    }
+
+    @Test
     fun adoptOutlineProposal_updatesPhaseTitleAndInitialSections_forPhase1Article() = runBlocking {
         val dao = FakeArticleDao()
         val articleId = dao.insertArticleDraft(phase1Article())
@@ -576,6 +607,9 @@ private class FakeArticleDao : ArticleDao {
             topic = topic,
             status = status,
             updatedAt = updatedAt,
+            allSectionsApproved = phase == ArticlePhase.Phase2 &&
+                sections.any { it.articleId == id } &&
+                sections.none { it.articleId == id && !it.userApproved },
         )
 
     private fun ArticleDraftEntity.toHeaderEntity(): ArticleDraftHeaderEntity =

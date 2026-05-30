@@ -14,4 +14,5 @@
 - Android全体設計、DI、テスト、検証方針を変更する場合は `.codex/skills/android-app-architecture/SKILL.md` を読む。
 - 記事フェーズ、`content` / `draftContent`、LLM提案、MVP境界に関わる場合は `.codex/skills/article-writing-domain/SKILL.md` を読む。
 - Compose UI、Flow/Coroutines、Room、LiteRT-LM、Markdown出力に関わる場合は、該当する `.codex/skills/*/SKILL.md` を読む。
+- Android CLIは常用せず、最新Android仕様、SDK/エミュレータ/実行、レイアウト調査、Android Studio連携が必要な場合に限って `.codex/skills/android-cli-usage/SKILL.md` を読み、必要に応じて汎用 `android-cli` スキルも読む。
 - 実装後は既存ユニットテストを実施し、開発タスクでは `.codex/skills/feedback-loop/SKILL.md` に従って `task/Feedback.md` へフィードバックを追記する。

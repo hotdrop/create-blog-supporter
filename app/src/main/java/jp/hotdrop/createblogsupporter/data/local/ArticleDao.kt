@@ -15,7 +15,33 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ArticleDao {
-    @Query("SELECT id, phase, title, topic, status, updatedAt FROM article_drafts ORDER BY updatedAt DESC")
+    @Query(
+        """
+        SELECT
+            id,
+            phase,
+            title,
+            topic,
+            status,
+            updatedAt,
+            CASE
+                WHEN phase = 'phase2'
+                    AND EXISTS (
+                        SELECT 1 FROM article_sections
+                        WHERE article_sections.articleId = article_drafts.id
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM article_sections
+                        WHERE article_sections.articleId = article_drafts.id
+                            AND article_sections.userApproved = 0
+                    )
+                THEN 1
+                ELSE 0
+            END AS allSectionsApproved
+        FROM article_drafts
+        ORDER BY updatedAt DESC
+        """,
+    )
     fun observeArticleDraftSummaries(): Flow<List<ArticleDraftSummaryEntity>>
 
     @Query("SELECT * FROM article_drafts WHERE id = :articleId")

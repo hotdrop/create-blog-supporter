@@ -42,6 +42,7 @@ data class ArticleDraftSummary(
     val topic: String,
     val status: ArticleStatus,
     val updatedAt: Long,
+    val allSectionsApproved: Boolean,
 )
 
 data class ArticleDraftHeader(

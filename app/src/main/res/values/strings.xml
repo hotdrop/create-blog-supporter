@@ -32,7 +32,9 @@
     <string name="outline_proposal_not_phase1">この記事は目次案を採用できません。</string>
     <string name="phase1_label">目次案</string>
     <string name="phase2_label">執筆</string>
+    <string name="article_complete_label">完了</string>
     <string name="status_draft">下書き</string>
+    <string name="status_all_sections_approved">全章節確認済み</string>
     <string name="updated_at_format">更新: %1$s</string>
     <string name="unknown_article">記事メモが見つかりません。</string>
     <string name="navigate_back">戻る</string>

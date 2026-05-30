@@ -178,15 +178,16 @@ private fun ArticleListCard(
                     onClick = onClick,
                     label = {
                         Text(
-                            text = when (article.phase) {
-                                ArticlePhase.Phase1 -> stringResource(R.string.phase1_label)
-                                ArticlePhase.Phase2 -> stringResource(R.string.phase2_label)
-                            },
+                            text = article.phaseLabel(),
                         )
                     },
                 )
                 Text(
-                    text = stringResource(R.string.status_draft),
+                    text = if (article.isComplete()) {
+                        stringResource(R.string.status_all_sections_approved)
+                    } else {
+                        stringResource(R.string.status_draft)
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -207,6 +208,20 @@ private fun ArticleListCard(
         }
     }
 }
+
+@Composable
+private fun ArticleListItemUiState.phaseLabel(): String =
+    if (isComplete()) {
+        stringResource(R.string.article_complete_label)
+    } else {
+        when (phase) {
+            ArticlePhase.Phase1 -> stringResource(R.string.phase1_label)
+            ArticlePhase.Phase2 -> stringResource(R.string.phase2_label)
+        }
+    }
+
+private fun ArticleListItemUiState.isComplete(): Boolean =
+    phase == ArticlePhase.Phase2 && allSectionsApproved
 
 @Preview(showBackground = true)
 @Composable
@@ -248,6 +263,25 @@ private fun ArticleListReadyPreview() {
                         topic = "Composeの状態管理について書く",
                         status = ArticleStatus.Draft,
                         updatedAt = 1_700_000_000_000,
+                        allSectionsApproved = false,
+                    ),
+                    ArticleListItemUiState(
+                        id = 2,
+                        phase = ArticlePhase.Phase2,
+                        title = "RoomのFlowを使った一覧更新",
+                        topic = "RoomとFlow",
+                        status = ArticleStatus.Draft,
+                        updatedAt = 1_700_100_000_000,
+                        allSectionsApproved = false,
+                    ),
+                    ArticleListItemUiState(
+                        id = 3,
+                        phase = ArticlePhase.Phase2,
+                        title = "Compose Previewの整え方",
+                        topic = "Compose Preview",
+                        status = ArticleStatus.Draft,
+                        updatedAt = 1_700_200_000_000,
+                        allSectionsApproved = true,
                     ),
                 ),
             ),
