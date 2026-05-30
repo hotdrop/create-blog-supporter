@@ -1,9 +1,7 @@
 package jp.hotdrop.createblogsupporter.domain
 
-import jp.hotdrop.createblogsupporter.domain.model.ArticleCharacterCountStatus
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadStatus
-import jp.hotdrop.createblogsupporter.domain.model.articleCharacterCountStatus
 import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.model.totalEditableContentCharacters
 import org.junit.Assert.assertEquals
@@ -50,14 +48,6 @@ class ArticleCharacterCountTest {
         )
 
         assertEquals(9, total)
-    }
-
-    @Test
-    fun articleCharacterCountStatus_classifiesUnderIdealIdealRangeAndOverLimit() {
-        assertEquals(ArticleCharacterCountStatus.UnderIdeal, articleCharacterCountStatus(4999))
-        assertEquals(ArticleCharacterCountStatus.IdealRange, articleCharacterCountStatus(5000))
-        assertEquals(ArticleCharacterCountStatus.IdealRange, articleCharacterCountStatus(7000))
-        assertEquals(ArticleCharacterCountStatus.OverLimit, articleCharacterCountStatus(7001))
     }
 
     private fun section(

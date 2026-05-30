@@ -52,9 +52,7 @@
     <string name="markdown_export_unapproved_sections">未確認の章節が%1$d件あります。全章節を確認済みにしてください。</string>
     <string name="markdown_export_write_failed">Markdownファイルを書き込めませんでした。</string>
     <string name="outline_heading">目次</string>
-    <string name="article_total_character_count_format">全体: %1$,d字</string>
-    <string name="article_ideal_character_count_format">目安 %1$,d字</string>
-    <string name="article_max_character_count_format">上限 %1$,d字</string>
+    <string name="article_total_character_count_format">総文字数: %1$,d字</string>
     <string name="section_character_count_format">%1$,d字</string>
     <string name="current_section_character_count_format">この章: %1$,d字</string>
     <string name="edit_outline">目次を編集</string>

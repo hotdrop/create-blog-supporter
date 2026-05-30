@@ -6,8 +6,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
-import jp.hotdrop.createblogsupporter.domain.model.ArticleCharacterCountStatus
-import jp.hotdrop.createblogsupporter.domain.model.articleCharacterCountStatus
 import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
@@ -233,9 +231,6 @@ data class ArticleEditorUiState(
 ) {
     val totalCharacterCount: Int
         get() = sections.sumOf { it.characterCount }
-
-    val characterCountStatus: ArticleCharacterCountStatus
-        get() = articleCharacterCountStatus(totalCharacterCount)
 }
 
 data class ArticleEditorSectionUiState(
