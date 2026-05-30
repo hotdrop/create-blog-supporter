@@ -22,6 +22,11 @@ description: Use when adding or modifying Room persistence, DAOs, entities, data
 - `content` 更新時に `userApproved` を維持するか解除するかはUseCase仕様として明示し、Markdown出力条件に影響する状態を暗黙更新しない。
 - 保存済みに戻す操作では `draftContent` を `content` で上書きし、`content` は変更しない。
 
+## サマリ・派生状態ルール
+- 章節由来の状態を記事一覧などのサマリに表示する場合は、永続状態を増やすのか、一覧専用の派生状態に閉じるのかを先に決める。
+- 表示用の派生状態で足りる場合は、`ArticleStatus` などの永続状態を増やさず、DAOサマリ、Mapper、UiStateの範囲に閉じる。
+- Roomのサマリクエリに派生Booleanを追加する場合は、実DBクエリ、Mapper、Fake DAO、Repositoryテストで同じ判定条件を固定する。
+
 ## Migration ルール
 - schema変更時はRoom migrationを追加し、既存データの `content` / `draftContent` / `userApproved` の意味を壊さない。
 - destructive migrationはMVP開発中でも原則使わない。必要な場合はユーザーに確認する。
@@ -37,4 +42,5 @@ description: Use when adding or modifying Room persistence, DAOs, entities, data
 - `content` と `draftContent` の更新経路が分かれている。
 - `phase2` から `phase1` へ戻る経路がない。
 - 章節順は `orderIndex` で安定している。
+- 章節由来のサマリ派生状態は、実DAOとFake DAOで判定条件が揃っている。
 - schema変更がある場合、migrationとテストが追加されている。

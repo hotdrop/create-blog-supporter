@@ -33,10 +33,18 @@ description: This app's Jetpack Compose UI implementation and modification skill
 - 高頻度更新される内部状態を、本文入力欄近くのレイアウト増減に直結させない。
 - 自動保存の成功通知は常時表示せず、失敗時や明示保存時のメッセージを優先する。
 - 文字数などの執筆支援メトリクスを表示する場合は、保存済み本文、編集中本文、Markdown出力対象の違いが混同されない文言と配置にする。
+- 保存済み本文由来の文字数と編集中本文由来の文字数は、`savedCharacterCount` などのUiState名と表示文言で意味を明確に分ける。
 - 目安値や上限警告のメトリクスは、明示要件がない限り保存・確認・出力をブロックする制約として表現しない。
 - 長文プレビューは編集フォームにインライン常設せず、保存済み本文確認用の独立画面または明示的な表示切り替えにする。
 - 再利用可能な部品は `ui/components/` に抽出し、画面固有ロジックを混ぜない。
 - レイアウト肥大化時は private Composable を分割し、1ファイルの責務を絞る。
+
+## UI 変更・削除時の確認
+- UI機能を削除または変更する時は、表示文言、文字列リソース、`testTag`、Routeコールバック、UiState、ViewModelイベント、Previewを同じ機能名で横断検索する。
+- 機能削除後は、英語名、日本語ラベル、`testTag` の3種類で `rg` 検索し、表示だけでなく派生状態やPreviewも残っていないことを確認する。
+- ユーザーの画面呼称とコード上のScreen名がずれる場合は、表示文言や `AssistChip` などのUI部品名でも検索して対象を確定する。
+- 章節カード、状態チップ、文字数表示を変更する時は、ArticleEditor、OutlineEdit、SectionEditor、ArticleListの関連表示を横断確認する。
+- 状態チップの色分けやアイコン変更では、永続状態を増やさず既存の派生表示に閉じられるかを先に確認する。
 
 ## 完了チェック
 - Route/Screen 分離が保たれている。
@@ -45,3 +53,4 @@ description: This app's Jetpack Compose UI implementation and modification skill
 - 文字列・色の直書きがなく、寸法はテーマ・定数・画面固有値のいずれかとして意図が明確である。
 - Preview が「通常・ローディング・エラー・空状態 + 画面固有状態」を網羅している。
 - ダーク固定前提の表示、System Bar、入力中のレイアウト安定性、確認状態の視認性が変更内容に応じて確認されている。
+- UI削除・状態表示変更では、関連する文言、`testTag`、UiState、ViewModelイベント、Previewの残存確認が済んでいる。
