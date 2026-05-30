@@ -15,12 +15,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -241,29 +243,18 @@ private fun OutlineEditSectionCard(
                 style = MaterialTheme.typography.titleSmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlineApprovalChip(userApproved = section.userApproved)
                 AssistChip(
                     onClick = {},
                     label = {
                         Text(
-                            text = if (section.hasContent) {
-                                stringResource(R.string.section_content_saved)
-                            } else {
-                                stringResource(R.string.section_content_empty)
-                            },
+                            text = stringResource(
+                                R.string.section_character_count_format,
+                                section.savedCharacterCount,
+                            ),
                         )
                     },
-                )
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        Text(
-                            text = if (section.userApproved) {
-                                stringResource(R.string.section_user_approved)
-                            } else {
-                                stringResource(R.string.section_user_not_approved)
-                            },
-                        )
-                    },
+                    modifier = Modifier.testTag("outlineEdit.sectionCharacterCount.${section.id}"),
                 )
             }
             Row(
@@ -323,6 +314,47 @@ private fun OutlineEditSectionCard(
             }
         }
     }
+}
+
+@Composable
+private fun OutlineApprovalChip(
+    userApproved: Boolean
+) {
+    val contentColor = if (userApproved) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+    AssistChip(
+        onClick = {},
+        label = {
+            Text(
+                text = if (userApproved) {
+                    stringResource(R.string.section_user_approved)
+                } else {
+                    stringResource(R.string.section_user_not_approved)
+                },
+            )
+        },
+        leadingIcon = if (userApproved) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                )
+            }
+        } else {
+            null
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            labelColor = contentColor,
+            leadingIconContentColor = contentColor,
+        ),
+        border = AssistChipDefaults.assistChipBorder(
+            enabled = true,
+            borderColor = contentColor,
+        ),
+    )
 }
 
 @Composable
@@ -469,14 +501,14 @@ private val PreviewOutlineSections = listOf(
         id = 1,
         heading = "背景と解決したかったこと",
         orderIndex = 0,
-        hasContent = true,
+        savedCharacterCount = 46,
         userApproved = true,
     ),
     OutlineEditSectionUiState(
         id = 2,
         heading = "実装で詰まったポイント",
         orderIndex = 1,
-        hasContent = false,
+        savedCharacterCount = 0,
         userApproved = false,
     ),
 )

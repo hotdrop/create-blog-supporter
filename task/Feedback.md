@@ -57,3 +57,23 @@
 - AGENTS.md: 追加不要。恒久プロダクトルールへの変更はない。
 - .codex/skills/android-compose-ui/SKILL.md: UI 機能削除時の横断検索観点を補足する候補。
 - docs/README/task/tests など: 比較機能を仕様から外すメモが必要ならタスクメモへ反映する候補。
+
+# 2026/5/30 10:51 フィードバック
+
+## 作業内容
+- OutlineEditScreen の章カードから「保存済み本文あり」「本文なし」チップを削除し、確認ステータスの色付きチップと保存済み本文の文字数表示に置き換えた。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: ArticleEditorScreen 側で整理した表示方針を OutlineEditScreen にも反映する必要があり、同種の章カード UI が複数画面に分散していた。
+- 改善した方がよいルール・手順: 章節ステータスや文字数の表示を変更する時は、ArticleEditor、OutlineEdit、SectionEditor の3画面を横断確認するとよい。
+- 追加した方がよいルール・手順: 保存済み本文の文字数と編集中本文優先の文字数は意味が違うため、UiState の名前で `savedCharacterCount` など明示する方針を維持したい。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: 章カードの共通表示方針が固まるなら、共通 Composable 抽出や UI 仕様メモ化を検討する余地がある。
+
+## 分類
+- タスク固有: OutlineEditScreen の章カード表示更新に伴う作業記録。
+- 恒久対応候補: 章節ステータス・文字数表示変更時の横断確認、文字数の意味を UiState 名で明示する方針。
+
+## 更新先候補
+- AGENTS.md: 追加不要。既存の `content` / `draftContent` 分離ルールで足りている。
+- .codex/skills/android-compose-ui/SKILL.md: 複数画面に同種カードがある場合の横断確認観点を補足する候補。
+- docs/README/task/tests など: 章カード UI の共通方針を仕様メモへ残す候補。

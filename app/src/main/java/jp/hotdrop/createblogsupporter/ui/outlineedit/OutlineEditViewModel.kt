@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSectionMoveDirection
+import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.AddArticleSectionUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionOperationResult
 import jp.hotdrop.createblogsupporter.domain.usecase.DeleteArticleSectionResult
@@ -279,7 +280,7 @@ data class OutlineEditSectionUiState(
     val id: Long,
     val heading: String,
     val orderIndex: Int,
-    val hasContent: Boolean,
+    val savedCharacterCount: Int,
     val userApproved: Boolean,
 )
 
@@ -321,6 +322,9 @@ private fun ArticleSection.toUiState(): OutlineEditSectionUiState =
         id = id,
         heading = heading,
         orderIndex = orderIndex,
-        hasContent = content.isNotBlank(),
+        savedCharacterCount = countEditableContentCharacters(
+            content = content,
+            draftContent = "",
+        ),
         userApproved = userApproved,
     )
