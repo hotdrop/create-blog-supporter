@@ -81,8 +81,6 @@
     <string name="section_comparison_added">追加</string>
     <string name="section_comparison_deleted">削除</string>
     <string name="section_comparison_changed">変更あり</string>
-    <string name="section_has_unsaved_changes">未保存の変更あり</string>
-    <string name="section_no_unsaved_changes">保存済みと同じ</string>
     <string name="section_draft_auto_saved">編集中本文を自動保存しました。</string>
     <string name="section_content_saved_message">本文を保存しました。確認済みにする場合はスイッチをオンにしてください。</string>
     <string name="section_draft_reset_message">編集中本文を保存済みに戻しました。</string>

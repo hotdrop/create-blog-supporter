@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -177,7 +178,6 @@ private fun SectionEditorContent(
             ),
             style = MaterialTheme.typography.titleLarge,
         )
-        StatusRow(uiState = uiState)
         MessageText(message = uiState.message)
         SavedContent(content = uiState.content)
         OutlinedTextField(
@@ -248,7 +248,7 @@ private fun SectionEditorContent(
             }
         }
         Row(
-            modifier = Modifier.fillMaxWidth(),
+
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -256,6 +256,7 @@ private fun SectionEditorContent(
                 text = stringResource(R.string.section_user_approved),
                 style = MaterialTheme.typography.titleSmall,
             )
+            Spacer(modifier = Modifier.width(12.dp))
             Switch(
                 checked = uiState.userApproved,
                 onCheckedChange = onUserApprovedChanged,
@@ -410,24 +411,6 @@ private fun LlmConsultationContent(
 }
 
 @Composable
-private fun StatusRow(uiState: SectionEditorUiState) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        AssistChip(
-            onClick = {},
-            label = {
-                Text(
-                    text = if (uiState.hasUnsavedChanges) {
-                        stringResource(R.string.section_has_unsaved_changes)
-                    } else {
-                        stringResource(R.string.section_no_unsaved_changes)
-                    },
-                )
-            },
-        )
-    }
-}
-
-@Composable
 private fun SavedContent(content: String) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -563,7 +546,7 @@ private val PreviewState = SectionEditorUiState(
     userApproved = false,
 )
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, heightDp = 1050)
 @Composable
 private fun SectionEditorReadyPreview() {
     CreateBlogSupporterTheme {
