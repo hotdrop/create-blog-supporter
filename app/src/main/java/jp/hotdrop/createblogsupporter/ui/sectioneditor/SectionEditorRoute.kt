@@ -38,7 +38,6 @@ fun SectionEditorRoute(
         onSaveContentClick = viewModel::onSaveContentClick,
         onResetDraftClick = viewModel::onResetDraftClick,
         onUserApprovedChanged = viewModel::onUserApprovedChanged,
-        onToggleComparisonClick = viewModel::onToggleComparisonClick,
         onConsultationInputChanged = viewModel::onConsultationInputChanged,
         onAskLlmClick = viewModel::onAskLlmClick,
         onCancelLlmClick = viewModel::onCancelLlmClick,

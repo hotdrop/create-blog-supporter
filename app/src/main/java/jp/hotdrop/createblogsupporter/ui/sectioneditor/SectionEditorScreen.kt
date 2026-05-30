@@ -1,6 +1,5 @@
 package jp.hotdrop.createblogsupporter.ui.sectioneditor
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Restore
@@ -56,7 +54,6 @@ fun SectionEditorScreen(
     onSaveContentClick: () -> Unit,
     onResetDraftClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
-    onToggleComparisonClick: () -> Unit,
     onConsultationInputChanged: (String) -> Unit,
     onAskLlmClick: () -> Unit,
     onCancelLlmClick: () -> Unit,
@@ -97,7 +94,6 @@ fun SectionEditorScreen(
                 onSaveContentClick = onSaveContentClick,
                 onResetDraftClick = onResetDraftClick,
                 onUserApprovedChanged = onUserApprovedChanged,
-                onToggleComparisonClick = onToggleComparisonClick,
                 onConsultationInputChanged = onConsultationInputChanged,
                 onAskLlmClick = onAskLlmClick,
                 onCancelLlmClick = onCancelLlmClick,
@@ -156,7 +152,6 @@ private fun SectionEditorContent(
     onSaveContentClick: () -> Unit,
     onResetDraftClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
-    onToggleComparisonClick: () -> Unit,
     onConsultationInputChanged: (String) -> Unit,
     onAskLlmClick: () -> Unit,
     onCancelLlmClick: () -> Unit,
@@ -265,26 +260,6 @@ private fun SectionEditorContent(
                     .testTag("sectionEditor.approvedSwitch")
                     .semantics { contentDescription = "section_user_approved_switch" },
             )
-        }
-        OutlinedButton(
-            onClick = onToggleComparisonClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("sectionEditor.compareButton")
-                .semantics { contentDescription = "toggle_section_comparison" },
-        ) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null)
-            Text(
-                text = if (uiState.showComparison) {
-                    stringResource(R.string.hide_section_comparison)
-                } else {
-                    stringResource(R.string.show_section_comparison)
-                },
-                modifier = Modifier.padding(start = 8.dp),
-            )
-        }
-        if (uiState.showComparison) {
-            ComparisonContent(rows = uiState.comparisonRows)
         }
     }
 }
@@ -431,69 +406,6 @@ private fun SavedContent(content: String) {
 }
 
 @Composable
-private fun ComparisonContent(rows: List<SectionComparisonRow>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("sectionEditor.comparison"),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.section_comparison_heading),
-            style = MaterialTheme.typography.titleMedium,
-        )
-        rows.forEachIndexed { index, row ->
-            ComparisonRow(
-                lineNumber = index + 1,
-                row = row,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ComparisonRow(
-    lineNumber: Int,
-    row: SectionComparisonRow,
-) {
-    val containerColor = when (row.type) {
-        SectionComparisonType.Unchanged -> MaterialTheme.colorScheme.surfaceVariant
-        SectionComparisonType.Added -> MaterialTheme.colorScheme.primaryContainer
-        SectionComparisonType.Deleted -> MaterialTheme.colorScheme.errorContainer
-        SectionComparisonType.Changed -> MaterialTheme.colorScheme.tertiaryContainer
-    }
-    val label = when (row.type) {
-        SectionComparisonType.Unchanged -> stringResource(R.string.section_comparison_unchanged)
-        SectionComparisonType.Added -> stringResource(R.string.section_comparison_added)
-        SectionComparisonType.Deleted -> stringResource(R.string.section_comparison_deleted)
-        SectionComparisonType.Changed -> stringResource(R.string.section_comparison_changed)
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = containerColor,
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.section_comparison_line_format, lineNumber, label),
-            style = MaterialTheme.typography.labelLarge,
-        )
-        Text(
-            text = stringResource(R.string.section_comparison_saved_format, row.savedText.ifBlank { "-" }),
-            style = MaterialTheme.typography.bodySmall,
-        )
-        Text(
-            text = stringResource(R.string.section_comparison_draft_format, row.draftText.ifBlank { "-" }),
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-}
-
-@Composable
 private fun MessageText(message: SectionEditorMessage?) {
     val text = when (message) {
         null -> null
@@ -546,7 +458,7 @@ private val PreviewState = SectionEditorUiState(
     userApproved = false,
 )
 
-@Preview(showBackground = true, heightDp = 1050)
+@Preview(showBackground = true, heightDp = 970)
 @Composable
 private fun SectionEditorReadyPreview() {
     CreateBlogSupporterTheme {
@@ -557,7 +469,6 @@ private fun SectionEditorReadyPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -577,7 +488,6 @@ private fun SectionEditorLoadingPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -597,7 +507,6 @@ private fun SectionEditorNotFoundPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -617,7 +526,6 @@ private fun SectionEditorNotPhase2Preview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -637,27 +545,6 @@ private fun SectionEditorSavingPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
-            onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
-            onCopyConsultationAnswerClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SectionEditorComparisonPreview() {
-    CreateBlogSupporterTheme {
-        SectionEditorScreen(
-            uiState = PreviewState.copy(showComparison = true),
-            onBack = {},
-            onDraftContentChanged = {},
-            onSaveContentClick = {},
-            onResetDraftClick = {},
-            onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -680,7 +567,6 @@ private fun SectionEditorEmptyContentPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -702,7 +588,6 @@ private fun SectionEditorConsultationInputPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -725,7 +610,6 @@ private fun SectionEditorConsultingPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -748,7 +632,6 @@ private fun SectionEditorConsultationAnswerPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
@@ -771,7 +654,6 @@ private fun SectionEditorConsultationErrorPreview() {
             onSaveContentClick = {},
             onResetDraftClick = {},
             onUserApprovedChanged = {},
-            onToggleComparisonClick = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},

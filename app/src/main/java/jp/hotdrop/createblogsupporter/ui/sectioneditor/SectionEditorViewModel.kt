@@ -245,10 +245,6 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
-    fun onToggleComparisonClick() {
-        _uiState.update { it.copy(showComparison = !it.showComparison) }
-    }
-
     fun onConsultationInputChanged(value: String) {
         _uiState.update {
             it.copy(
@@ -436,7 +432,6 @@ data class SectionEditorUiState(
     val isAutoSavingDraft: Boolean = false,
     val isUpdatingApproval: Boolean = false,
     val isConsultingLlm: Boolean = false,
-    val showComparison: Boolean = false,
     val consultationInput: String = "",
     val consultationAnswer: String = "",
     val consultationMessage: SectionEditorConsultationMessage? = null,
@@ -446,27 +441,11 @@ data class SectionEditorUiState(
     val hasUnsavedChanges: Boolean
         get() = content != draftContent
 
-    val comparisonRows: List<SectionComparisonRow>
-        get() = buildComparisonRows(content, draftContent)
-
     val currentCharacterCount: Int
         get() = countEditableContentCharacters(
             content = content,
             draftContent = draftContent,
         )
-}
-
-data class SectionComparisonRow(
-    val savedText: String,
-    val draftText: String,
-    val type: SectionComparisonType,
-)
-
-enum class SectionComparisonType {
-    Unchanged,
-    Added,
-    Deleted,
-    Changed,
 }
 
 enum class SectionEditorMessage {
@@ -491,39 +470,6 @@ enum class SectionEditorError {
     NotFound,
     NotPhase2,
 }
-
-private fun buildComparisonRows(
-    savedContent: String,
-    draftContent: String,
-): List<SectionComparisonRow> {
-    val savedLines = savedContent.linesForComparison()
-    val draftLines = draftContent.linesForComparison()
-    val maxSize = maxOf(savedLines.size, draftLines.size)
-    if (maxSize == 0) {
-        return listOf(SectionComparisonRow("", "", SectionComparisonType.Unchanged))
-    }
-    return (0 until maxSize).map { index ->
-        val saved = savedLines.getOrNull(index).orEmpty()
-        val draft = draftLines.getOrNull(index).orEmpty()
-        val type = when {
-            saved == draft -> SectionComparisonType.Unchanged
-            saved.isEmpty() -> SectionComparisonType.Added
-            draft.isEmpty() -> SectionComparisonType.Deleted
-            else -> SectionComparisonType.Changed
-        }
-        SectionComparisonRow(
-            savedText = saved,
-            draftText = draft,
-            type = type,
-        )
-    }
-}
-
-private fun String.linesForComparison(): List<String> =
-    lineSequence()
-        .map { it.trimEnd() }
-        .toList()
-        .dropLastWhile { it.isEmpty() }
 
 private fun ArticleSection.toConsultationContext(isTarget: Boolean): SectionConsultationSectionContext =
     SectionConsultationSectionContext(

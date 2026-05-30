@@ -71,16 +71,6 @@
     <string name="section_draft_content_label">編集中本文</string>
     <string name="save_section_content">本文を保存</string>
     <string name="reset_section_draft">保存済みに戻す</string>
-    <string name="show_section_comparison">比較を表示</string>
-    <string name="hide_section_comparison">比較を閉じる</string>
-    <string name="section_comparison_heading">保存済み本文と編集中本文の比較</string>
-    <string name="section_comparison_line_format">%1$d行目: %2$s</string>
-    <string name="section_comparison_saved_format">保存済み: %1$s</string>
-    <string name="section_comparison_draft_format">編集中: %1$s</string>
-    <string name="section_comparison_unchanged">変更なし</string>
-    <string name="section_comparison_added">追加</string>
-    <string name="section_comparison_deleted">削除</string>
-    <string name="section_comparison_changed">変更あり</string>
     <string name="section_draft_auto_saved">編集中本文を自動保存しました。</string>
     <string name="section_content_saved_message">本文を保存しました。確認済みにする場合はスイッチをオンにしてください。</string>
     <string name="section_draft_reset_message">編集中本文を保存済みに戻しました。</string>
