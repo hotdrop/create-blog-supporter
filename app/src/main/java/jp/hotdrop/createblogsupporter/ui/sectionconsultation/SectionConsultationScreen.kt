@@ -162,7 +162,7 @@ private fun ConsultationContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("sectionConsultation.input")
-                .semantics { contentDescription = "section_chatgpt_request_note_input" },
+                .semantics { contentDescription = "section_llm_request_note_input" },
             label = { Text(text = stringResource(R.string.section_llm_consultation_label)) },
             placeholder = { Text(text = stringResource(R.string.section_llm_consultation_placeholder)) },
             minLines = 3,
@@ -173,7 +173,7 @@ private fun ConsultationContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("sectionConsultation.createButton")
-                .semantics { contentDescription = "create_section_chatgpt_request" },
+                .semantics { contentDescription = "create_section_llm_request" },
         ) {
             Text(text = stringResource(R.string.section_llm_ask))
         }
@@ -201,7 +201,7 @@ private fun ConsultationContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("sectionConsultation.copyButton")
-                            .semantics { contentDescription = "copy_section_chatgpt_request" },
+                            .semantics { contentDescription = "copy_section_llm_request" },
                     ) {
                         Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
                         Text(
@@ -277,7 +277,7 @@ private fun SectionConsultationResultPreview() {
         SectionConsultationScreen(
             uiState = PreviewState.copy(
                 consultationInput = "実装で困ったところも自然に入れたいです。",
-                consultationAnswer = "ChatGPTへの依頼:\n以下の文脈をもとに、「現在の章」の完成本文案をテックブログ向けの自然な文章として作成してください。\n\n記事タイトル:\nCompose Navigationの設計判断",
+                consultationAnswer = "LLMへの依頼:\n以下の文脈をもとに、「現在の章」の完成本文案をテックブログ向けの自然な文章として作成してください。\n\n記事タイトル:\nCompose Navigationの設計判断",
             ),
             onBack = {},
             onConsultationInputChanged = {},
@@ -293,7 +293,7 @@ private fun SectionConsultationCopiedPreview() {
     CreateBlogSupporterTheme {
         SectionConsultationScreen(
             uiState = PreviewState.copy(
-                consultationAnswer = "ChatGPTへの依頼:\n現在の章の完成本文案を作成してください。",
+                consultationAnswer = "LLMへの依頼:\n現在の章の完成本文案を作成してください。",
                 message = SectionConsultationMessage.Copied,
             ),
             onBack = {},

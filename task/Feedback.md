@@ -102,3 +102,24 @@
 - AGENTS.md: なし。恒久ルールの変更は不要。
 - .codex/skills/android-compose-ui/SKILL.md: 画面分離時の確認項目と、中心画面に支援機能を盛り込みすぎない指針を追記する候補。
 - docs/README/task/tests など: Navigation追加手順のメモ化は有用だが、今回の変更はcompile/testで担保できているため追加ドキュメントは必須ではない。
+
+# 2026/5/31 11:38 フィードバック
+
+## 作業内容
+- 依頼文作成機能の表示文言と生成プロンプトから特定サービス名を外し、ChatGPT表記をLLM表記へ変更した。
+- アクセシビリティ用contentDescriptionとPreviewサンプルもLLM表記へそろえた。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: 機能名の変更が文字列リソースだけでなく、生成プロンプト、Preview、contentDescriptionにもまたがっていた。
+- 改善した方がよいルール・手順: サービス名を含む表現を変更する場合、UI文言、プロンプト本文、テスト期待値、Preview、semantics、clipboard labelを横断検索する手順を明示するとよい。
+- 追加した方がよいルール・手順: 外部AIへ貼り付ける文章生成では、特定サービス名を要件で指定されない限り「LLM」など中立表現を既定にする方針を検討するとよい。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: 今回は `rg` とcompile/testで確認できており、追加ドキュメントは不要。
+
+## 分類
+- タスク固有: 依頼文作成機能のChatGPT表記をLLM表記へ変更した確認観点。
+- 恒久対応候補: 外部AIサービス名の中立表現化ルール。
+
+## 更新先候補
+- AGENTS.md: なし。恒久ルールの変更は不要。
+- .codex/skills/article-writing-domain/SKILL.md: 外部AI向け依頼文の既定表現を特定サービス名ではなくLLMにする方針を追記する候補。
+- docs/README/task/tests など: なし。

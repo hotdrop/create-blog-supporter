@@ -83,7 +83,7 @@ internal fun buildSectionPastePrompt(request: SectionConsultationRequest): Strin
         .ifBlank { "他の章はまだありません。" }
 
     return """
-    ChatGPTへの依頼:
+    LLMへの依頼:
     以下の文脈をもとに、「現在の章」の完成本文案をテックブログ向けの自然な文章として作成してください。
     後から自分で修正する前提なので、元メモや既存文脈から外れた断定は避けてください。
 
