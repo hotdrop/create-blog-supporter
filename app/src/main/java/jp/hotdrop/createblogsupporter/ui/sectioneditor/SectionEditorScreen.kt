@@ -42,6 +42,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import jp.hotdrop.createblogsupporter.R
+import jp.hotdrop.createblogsupporter.domain.model.ProofreadingCheckResult
+import jp.hotdrop.createblogsupporter.domain.model.ProofreadingIssue
 import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +58,8 @@ fun SectionEditorScreen(
     onConsultationInputChanged: (String) -> Unit,
     onCreatePastePromptClick: () -> Unit,
     onCopyConsultationAnswerClick: () -> Unit,
+    onProofreadClick: () -> Unit = {},
+    onCancelProofreadClick: () -> Unit = {},
     showDiscardChangesDialog: Boolean = false,
     onDismissDiscardChangesDialog: () -> Unit = {},
     onConfirmDiscardChanges: () -> Unit = {}
@@ -96,6 +100,8 @@ fun SectionEditorScreen(
                 onConsultationInputChanged = onConsultationInputChanged,
                 onCreatePastePromptClick = onCreatePastePromptClick,
                 onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
+                onProofreadClick = onProofreadClick,
+                onCancelProofreadClick = onCancelProofreadClick,
             )
         }
     }
@@ -159,6 +165,8 @@ private fun SectionEditorContent(
     onConsultationInputChanged: (String) -> Unit,
     onCreatePastePromptClick: () -> Unit,
     onCopyConsultationAnswerClick: () -> Unit,
+    onProofreadClick: () -> Unit,
+    onCancelProofreadClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -220,6 +228,11 @@ private fun SectionEditorContent(
                 )
             }
         }
+        ProofreadingContent(
+            uiState = uiState,
+            onProofreadClick = onProofreadClick,
+            onCancelProofreadClick = onCancelProofreadClick,
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -318,6 +331,136 @@ private fun LlmConsultationContent(
 }
 
 @Composable
+private fun ProofreadingContent(
+    uiState: SectionEditorUiState,
+    onProofreadClick: () -> Unit,
+    onCancelProofreadClick: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.section_proofreading_heading),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(R.string.section_proofreading_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ProofreadingMessageText(message = uiState.proofreadingMessage)
+        if (uiState.isProofreading) {
+            Card(shape = RoundedCornerShape(8.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        CircularProgressIndicator()
+                        Column {
+                            Text(
+                                text = stringResource(R.string.section_proofreading_processing_title),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                text = stringResource(R.string.section_proofreading_processing_message),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = onCancelProofreadClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("sectionEditor.cancelProofreadButton")
+                            .semantics { contentDescription = "cancel_section_proofreading" },
+                    ) {
+                        Text(text = stringResource(R.string.section_proofreading_cancel))
+                    }
+                }
+            }
+        } else {
+            Button(
+                onClick = onProofreadClick,
+                enabled = uiState.currentCharacterCount > 0,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("sectionEditor.proofreadButton")
+                    .semantics { contentDescription = "check_section_proofreading" },
+            ) {
+                Text(text = stringResource(R.string.section_proofreading_check))
+            }
+        }
+        uiState.proofreadingResult?.let { result ->
+            ProofreadingResultCard(result = result)
+        }
+    }
+}
+
+@Composable
+private fun ProofreadingResultCard(result: ProofreadingCheckResult) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.testTag("sectionEditor.proofreadingResult"),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.section_proofreading_result_heading),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = result.message,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (result.issues.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.section_proofreading_no_issues),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                result.issues.forEach { issue ->
+                    ProofreadingIssueContent(issue = issue)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProofreadingIssueContent(issue: ProofreadingIssue) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("sectionEditor.proofreadingIssue"),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.section_proofreading_issue_target, issue.targetText),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = stringResource(R.string.section_proofreading_issue_suggestion, issue.suggestion),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = stringResource(R.string.section_proofreading_issue_reason, issue.reason),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun MessageText(message: SectionEditorMessage?) {
     val text = when (message) {
         null -> null
@@ -326,6 +469,28 @@ private fun MessageText(message: SectionEditorMessage?) {
         SectionEditorMessage.MarkedApproved -> stringResource(R.string.section_marked_approved)
         SectionEditorMessage.MarkedUnapproved -> stringResource(R.string.section_marked_unapproved)
         SectionEditorMessage.OperationFailed -> stringResource(R.string.section_operation_failed)
+    }
+    if (text != null) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ProofreadingMessageText(message: SectionEditorProofreadingMessage?) {
+    val text = when (message) {
+        null -> null
+        SectionEditorProofreadingMessage.ModelNotConfigured -> {
+            stringResource(R.string.section_proofreading_model_not_configured)
+        }
+        SectionEditorProofreadingMessage.ModelInitializationFailed -> {
+            stringResource(R.string.section_proofreading_model_initialization_failed)
+        }
+        SectionEditorProofreadingMessage.CheckFailed -> stringResource(R.string.section_proofreading_check_failed)
+        SectionEditorProofreadingMessage.Cancelled -> stringResource(R.string.section_proofreading_cancelled)
     }
     if (text != null) {
         Text(
@@ -514,6 +679,93 @@ private fun SectionEditorConsultationInputPreview() {
         SectionEditorScreen(
             uiState = PreviewState.copy(
                 consultationInput = "この章では何を書けばいいでしょうか？",
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onUserApprovedChanged = {},
+            onConsultationInputChanged = {},
+            onCreatePastePromptClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorProofreadingPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(isProofreading = true),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onUserApprovedChanged = {},
+            onConsultationInputChanged = {},
+            onCreatePastePromptClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorProofreadingResultPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                proofreadingResult = ProofreadingCheckResult(
+                    message = "誤字脱字・表記ゆれの候補が 1 件あります。必要なものだけ反映してください。",
+                    issues = listOf(
+                        ProofreadingIssue(
+                            id = "proofreading-1",
+                            targetText = "LiteRM",
+                            suggestion = "LiteRT-LM",
+                            reason = "SDK名の表記をプロジェクト内の正式表記にそろえる候補です。",
+                        ),
+                    ),
+                ),
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onUserApprovedChanged = {},
+            onConsultationInputChanged = {},
+            onCreatePastePromptClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorProofreadingNoIssuesPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                proofreadingResult = ProofreadingCheckResult(
+                    message = "候補は見つかりませんでした。",
+                    issues = emptyList(),
+                ),
+            ),
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onUserApprovedChanged = {},
+            onConsultationInputChanged = {},
+            onCreatePastePromptClick = {},
+            onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorProofreadingModelNotConfiguredPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState.copy(
+                proofreadingMessage = SectionEditorProofreadingMessage.ModelNotConfigured,
             ),
             onBack = {},
             onDraftContentChanged = {},

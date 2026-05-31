@@ -63,6 +63,8 @@ fun SectionEditorRoute(
         onConsultationInputChanged = viewModel::onConsultationInputChanged,
         onCreatePastePromptClick = viewModel::onCreatePastePromptClick,
         onCopyConsultationAnswerClick = viewModel::onCopyConsultationAnswerClick,
+        onProofreadClick = viewModel::onProofreadClick,
+        onCancelProofreadClick = viewModel::onCancelProofreadClick,
         showDiscardChangesDialog = showDiscardChangesDialog,
         onDismissDiscardChangesDialog = { showDiscardChangesDialog = false },
         onConfirmDiscardChanges = viewModel::onDiscardChangesClick,

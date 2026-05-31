@@ -250,6 +250,80 @@ class LlmSupportUseCasesTest {
     }
 
     @Test
+    fun checkSectionProofreading_returnsNoIssuesWhenOnlyMessageExists() = runBlocking {
+        val result = CheckSectionProofreadingUseCase(
+            FakeBlogSupportLlmClient("MESSAGE: 候補は見つかりませんでした。"),
+        )(
+            ProofreadingRequest(
+                articleTitle = "記事タイトル",
+                sectionHeading = "設計方針",
+                savedContent = "",
+                draftContent = "表記ゆれがない本文です。",
+            ),
+        ).successValue()
+
+        assertEquals("候補は見つかりませんでした。", result.message)
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun checkSectionProofreading_returnsMultipleIssues() = runBlocking {
+        val result = CheckSectionProofreadingUseCase(
+            FakeBlogSupportLlmClient(
+                """
+                MESSAGE: 候補が 2 件あります。
+                ISSUE: LiteRM
+                SUGGEST: LiteRT-LM
+                REASON: SDK名の表記候補です。
+                ISSUE: できました
+                SUGGEST: できました。
+                REASON: 句点を補う候補です。
+                """.trimIndent(),
+            ),
+        )(
+            ProofreadingRequest(
+                articleTitle = "記事タイトル",
+                sectionHeading = "設計方針",
+                savedContent = "",
+                draftContent = "LiteRM を設定できました",
+            ),
+        ).successValue()
+
+        assertEquals(2, result.issues.size)
+        assertEquals("LiteRT-LM", result.issues[0].suggestion)
+        assertEquals("できました。", result.issues[1].suggestion)
+    }
+
+    @Test
+    fun checkSectionProofreading_convertsClientFailure() = runBlocking {
+        val result = CheckSectionProofreadingUseCase(
+            FakeBlogSupportLlmClient(failure = LlmSupportFailure.ModelNotConfigured),
+        )(
+            ProofreadingRequest(
+                articleTitle = "記事タイトル",
+                sectionHeading = "設計方針",
+                savedContent = "",
+                draftContent = "チェック対象本文",
+            ),
+        )
+
+        assertEquals(LlmSupportFailure.ModelNotConfigured, result.failureReason())
+    }
+
+    @Test(expected = CancellationException::class)
+    fun checkSectionProofreading_rethrowsCancellation() = runBlocking {
+        CheckSectionProofreadingUseCase(FakeBlogSupportLlmClient(cancel = true))(
+            ProofreadingRequest(
+                articleTitle = "記事タイトル",
+                sectionHeading = "設計方針",
+                savedContent = "",
+                draftContent = "チェック対象本文",
+            ),
+        )
+        Unit
+    }
+
+    @Test
     fun generateSectionPastePrompt_returnsRequestWithArticleContextWithoutChangingSectionContent() {
         val section = section(
             content = "保存済み本文",

@@ -7,10 +7,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
+import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
+import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
+import jp.hotdrop.createblogsupporter.domain.model.ProofreadingCheckResult
+import jp.hotdrop.createblogsupporter.domain.model.ProofreadingRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
 import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
+import jp.hotdrop.createblogsupporter.domain.usecase.CheckSectionProofreadingUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionPastePromptUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
@@ -44,11 +49,13 @@ class SectionEditorViewModel @Inject constructor(
     private val resetArticleSectionDraftToSavedUseCase: ResetArticleSectionDraftToSavedUseCase,
     private val updateArticleSectionUserApprovedUseCase: UpdateArticleSectionUserApprovedUseCase,
     private val generateSectionPastePromptUseCase: GenerateSectionPastePromptUseCase,
+    private val checkSectionProofreadingUseCase: CheckSectionProofreadingUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
     private val sectionId: Long = checkNotNull(savedStateHandle["sectionId"])
     private var hasLocalDraftEdit = false
     private var draftAutoSaveJob: Job? = null
+    private var proofreadingJob: Job? = null
 
     private val _uiState = MutableStateFlow(SectionEditorUiState(isLoading = true))
     val uiState: StateFlow<SectionEditorUiState> = _uiState.asStateFlow()
@@ -108,6 +115,8 @@ class SectionEditorViewModel @Inject constructor(
             it.copy(
                 draftContent = value,
                 message = null,
+                proofreadingResult = null,
+                proofreadingMessage = null,
             )
         }
         draftAutoSaveJob?.cancel()
@@ -295,6 +304,59 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
+    fun onProofreadClick() {
+        val current = _uiState.value
+        if (current.isProofreading || current.draftContent.isBlank() && current.content.isBlank()) return
+        proofreadingJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isProofreading = true,
+                    proofreadingResult = null,
+                    proofreadingMessage = null,
+                )
+            }
+            try {
+                when (
+                    val result = checkSectionProofreadingUseCase(
+                        ProofreadingRequest(
+                            articleTitle = current.articleTitle,
+                            sectionHeading = current.heading,
+                            savedContent = current.content,
+                            draftContent = current.draftContent,
+                        ),
+                    )
+                ) {
+                    is LlmSupportResult.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isProofreading = false,
+                                proofreadingResult = result.value,
+                                proofreadingMessage = null,
+                            )
+                        }
+                    }
+
+                    is LlmSupportResult.Failure -> showProofreadingFailed(result.reason)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } finally {
+                proofreadingJob = null
+            }
+        }
+    }
+
+    fun onCancelProofreadClick() {
+        proofreadingJob?.cancel()
+        proofreadingJob = null
+        _uiState.update {
+            it.copy(
+                isProofreading = false,
+                proofreadingMessage = SectionEditorProofreadingMessage.Cancelled,
+            )
+        }
+    }
+
     private fun applyArticleAndSection(
         article: ArticleDraft,
         section: ArticleSection,
@@ -367,6 +429,21 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
+    private fun showProofreadingFailed(reason: LlmSupportFailure) {
+        _uiState.update {
+            it.copy(
+                isProofreading = false,
+                proofreadingMessage = when (reason) {
+                    LlmSupportFailure.ModelNotConfigured,
+                    LlmSupportFailure.ModelFileMissing,
+                    -> SectionEditorProofreadingMessage.ModelNotConfigured
+                    LlmSupportFailure.InitializationFailed -> SectionEditorProofreadingMessage.ModelInitializationFailed
+                    else -> SectionEditorProofreadingMessage.CheckFailed
+                },
+            )
+        }
+    }
+
 }
 
 data class SectionEditorUiState(
@@ -384,6 +461,9 @@ data class SectionEditorUiState(
     val isDiscardingChanges: Boolean = false,
     val isAutoSavingDraft: Boolean = false,
     val isUpdatingApproval: Boolean = false,
+    val isProofreading: Boolean = false,
+    val proofreadingResult: ProofreadingCheckResult? = null,
+    val proofreadingMessage: SectionEditorProofreadingMessage? = null,
     val consultationInput: String = "",
     val consultationAnswer: String = "",
     val consultationMessage: SectionEditorConsultationMessage? = null,
@@ -410,6 +490,13 @@ enum class SectionEditorMessage {
 
 enum class SectionEditorConsultationMessage {
     Copied,
+}
+
+enum class SectionEditorProofreadingMessage {
+    ModelNotConfigured,
+    ModelInitializationFailed,
+    CheckFailed,
+    Cancelled,
 }
 
 enum class SectionEditorError {
