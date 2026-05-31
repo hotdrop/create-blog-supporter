@@ -17,8 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,17 +48,19 @@ import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SectionEditorScreen(
+    modifier: Modifier = Modifier,
     uiState: SectionEditorUiState,
     onBack: () -> Unit,
     onDraftContentChanged: (String) -> Unit,
     onSaveContentClick: () -> Unit,
-    onResetDraftClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
     onConsultationInputChanged: (String) -> Unit,
     onAskLlmClick: () -> Unit,
     onCancelLlmClick: () -> Unit,
     onCopyConsultationAnswerClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    showDiscardChangesDialog: Boolean = false,
+    onDismissDiscardChangesDialog: () -> Unit = {},
+    onConfirmDiscardChanges: () -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -91,7 +94,6 @@ fun SectionEditorScreen(
                 innerPadding = innerPadding,
                 onDraftContentChanged = onDraftContentChanged,
                 onSaveContentClick = onSaveContentClick,
-                onResetDraftClick = onResetDraftClick,
                 onUserApprovedChanged = onUserApprovedChanged,
                 onConsultationInputChanged = onConsultationInputChanged,
                 onAskLlmClick = onAskLlmClick,
@@ -99,6 +101,13 @@ fun SectionEditorScreen(
                 onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
             )
         }
+    }
+    if (showDiscardChangesDialog) {
+        DiscardChangesDialog(
+            isDiscardingChanges = uiState.isDiscardingChanges,
+            onDismissRequest = onDismissDiscardChangesDialog,
+            onConfirmClick = onConfirmDiscardChanges,
+        )
     }
 }
 
@@ -149,7 +158,6 @@ private fun SectionEditorContent(
     innerPadding: PaddingValues,
     onDraftContentChanged: (String) -> Unit,
     onSaveContentClick: () -> Unit,
-    onResetDraftClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
     onConsultationInputChanged: (String) -> Unit,
     onAskLlmClick: () -> Unit,
@@ -173,7 +181,6 @@ private fun SectionEditorContent(
             style = MaterialTheme.typography.titleLarge,
         )
         MessageText(message = uiState.message)
-        SavedContent(content = uiState.content)
         OutlinedTextField(
             value = uiState.draftContent,
             onValueChange = onDraftContentChanged,
@@ -200,49 +207,25 @@ private fun SectionEditorContent(
             onCancelLlmClick = onCancelLlmClick,
             onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Button(
+            onClick = onSaveContentClick,
+            enabled = !uiState.isSavingContent,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.saveButton")
+                .semantics { contentDescription = "save_section_content" },
         ) {
-            Button(
-                onClick = onSaveContentClick,
-                enabled = !uiState.isSavingContent,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("sectionEditor.saveButton")
-                    .semantics { contentDescription = "save_section_content" },
-            ) {
-                if (uiState.isSavingContent) {
-                    CircularProgressIndicator()
-                } else {
-                    Icon(imageVector = Icons.Default.Save, contentDescription = null)
-                    Text(
-                        text = stringResource(R.string.save_section_content),
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
-            }
-            OutlinedButton(
-                onClick = onResetDraftClick,
-                enabled = !uiState.isResettingDraft,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("sectionEditor.resetButton")
-                    .semantics { contentDescription = "reset_section_draft" },
-            ) {
-                if (uiState.isResettingDraft) {
-                    CircularProgressIndicator()
-                } else {
-                    Icon(imageVector = Icons.Default.Restore, contentDescription = null)
-                    Text(
-                        text = stringResource(R.string.reset_section_draft),
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
+            if (uiState.isSavingContent) {
+                CircularProgressIndicator()
+            } else {
+                Icon(imageVector = Icons.Default.Save, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.save_section_content),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
             }
         }
         Row(
-
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -385,32 +368,11 @@ private fun LlmConsultationContent(
 }
 
 @Composable
-private fun SavedContent(content: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.section_saved_content_label),
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Card(shape = RoundedCornerShape(8.dp)) {
-            Text(
-                text = content.ifBlank { stringResource(R.string.section_saved_content_empty) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
 private fun MessageText(message: SectionEditorMessage?) {
     val text = when (message) {
         null -> null
         SectionEditorMessage.DraftAutoSaved -> null
         SectionEditorMessage.ContentSaved -> stringResource(R.string.section_content_saved_message)
-        SectionEditorMessage.DraftReset -> stringResource(R.string.section_draft_reset_message)
         SectionEditorMessage.MarkedApproved -> stringResource(R.string.section_marked_approved)
         SectionEditorMessage.MarkedUnapproved -> stringResource(R.string.section_marked_unapproved)
         SectionEditorMessage.OperationFailed -> stringResource(R.string.section_operation_failed)
@@ -422,6 +384,46 @@ private fun MessageText(message: SectionEditorMessage?) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun DiscardChangesDialog(
+    isDiscardingChanges: Boolean,
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = {
+            if (!isDiscardingChanges) {
+                onDismissRequest()
+            }
+        },
+        title = { Text(text = stringResource(R.string.section_discard_changes_title)) },
+        text = { Text(text = stringResource(R.string.section_discard_changes_message)) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirmClick,
+                enabled = !isDiscardingChanges,
+                modifier = Modifier
+                    .testTag("sectionEditor.discardDialog.confirmButton")
+                    .semantics { contentDescription = "discard_section_changes_and_close" },
+            ) {
+                Text(text = stringResource(R.string.section_discard_changes_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismissRequest,
+                enabled = !isDiscardingChanges,
+                modifier = Modifier
+                    .testTag("sectionEditor.discardDialog.cancelButton")
+                    .semantics { contentDescription = "cancel_discard_section_changes" },
+            ) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        },
+        modifier = Modifier.testTag("sectionEditor.discardDialog"),
+    )
 }
 
 @Composable
@@ -466,7 +468,6 @@ private fun SectionEditorReadyPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -485,7 +486,6 @@ private fun SectionEditorLoadingPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -504,7 +504,6 @@ private fun SectionEditorNotFoundPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -523,7 +522,6 @@ private fun SectionEditorNotPhase2Preview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -542,7 +540,6 @@ private fun SectionEditorSavingPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -564,7 +561,6 @@ private fun SectionEditorEmptyContentPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -585,7 +581,6 @@ private fun SectionEditorConsultationInputPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -607,12 +602,30 @@ private fun SectionEditorConsultingPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
             onCancelLlmClick = {},
             onCopyConsultationAnswerClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SectionEditorDiscardChangesDialogPreview() {
+    CreateBlogSupporterTheme {
+        SectionEditorScreen(
+            uiState = PreviewState,
+            onBack = {},
+            onDraftContentChanged = {},
+            onSaveContentClick = {},
+            onUserApprovedChanged = {},
+            onConsultationInputChanged = {},
+            onAskLlmClick = {},
+            onCancelLlmClick = {},
+            onCopyConsultationAnswerClick = {},
+            showDiscardChangesDialog = true,
         )
     }
 }
@@ -629,7 +642,6 @@ private fun SectionEditorConsultationAnswerPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},
@@ -651,7 +663,6 @@ private fun SectionEditorConsultationErrorPreview() {
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
-            onResetDraftClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
             onAskLlmClick = {},

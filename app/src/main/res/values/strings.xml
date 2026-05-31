@@ -68,14 +68,13 @@
     <string name="section_edit_not_implemented">章節本文編集は次のタスクで実装します。</string>
     <string name="section_editor_title">章節本文編集</string>
     <string name="section_editor_heading_format">%1$d. %2$s</string>
-    <string name="section_saved_content_label">保存済み本文</string>
-    <string name="section_saved_content_empty">保存済み本文はまだありません。</string>
     <string name="section_draft_content_label">編集中本文</string>
     <string name="save_section_content">本文を保存</string>
-    <string name="reset_section_draft">保存済みに戻す</string>
+    <string name="section_discard_changes_title">編集内容を破棄</string>
+    <string name="section_discard_changes_message">編集されていますが破棄して画面を閉じますか？</string>
+    <string name="section_discard_changes_confirm">破棄して閉じる</string>
     <string name="section_draft_auto_saved">編集中本文を自動保存しました。</string>
     <string name="section_content_saved_message">本文を保存しました。確認済みにする場合はスイッチをオンにしてください。</string>
-    <string name="section_draft_reset_message">編集中本文を保存済みに戻しました。</string>
     <string name="section_marked_approved">章節を確認済みにしました。</string>
     <string name="section_marked_unapproved">章節を未確認に戻しました。</string>
     <string name="section_operation_failed">章節本文を更新できませんでした。</string>

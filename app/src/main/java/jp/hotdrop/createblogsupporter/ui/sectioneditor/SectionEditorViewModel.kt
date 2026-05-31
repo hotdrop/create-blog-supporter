@@ -59,6 +59,9 @@ class SectionEditorViewModel @Inject constructor(
     private val _copyEvents = MutableSharedFlow<String>()
     val copyEvents: SharedFlow<String> = _copyEvents.asSharedFlow()
 
+    private val _closeEvents = MutableSharedFlow<Unit>()
+    val closeEvents: SharedFlow<Unit> = _closeEvents.asSharedFlow()
+
     init {
         viewModelScope.launch {
             combine(
@@ -159,15 +162,15 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
-    fun onResetDraftClick() {
+    fun onDiscardChangesClick() {
         val current = _uiState.value
-        if (current.isResettingDraft) return
+        if (current.isDiscardingChanges) return
         draftAutoSaveJob?.cancel()
         draftAutoSaveJob = null
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
-                    isResettingDraft = true,
+                    isDiscardingChanges = true,
                     isAutoSavingDraft = false,
                     message = null,
                 )
@@ -178,19 +181,20 @@ class SectionEditorViewModel @Inject constructor(
                         hasLocalDraftEdit = false
                         _uiState.update {
                             it.copy(
-                                isResettingDraft = false,
+                                isDiscardingChanges = false,
                                 draftContent = current.content,
-                                message = SectionEditorMessage.DraftReset,
+                                message = null,
                             )
                         }
+                        _closeEvents.emit(Unit)
                     }
 
-                    ArticleSectionContentOperationResult.NotPhase2OrMissing -> showOperationFailed(isResettingDraft = true)
+                    ArticleSectionContentOperationResult.NotPhase2OrMissing -> showOperationFailed(isDiscardingChanges = true)
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                showOperationFailed(isResettingDraft = true)
+                showOperationFailed(isDiscardingChanges = true)
             }
         }
     }
@@ -389,12 +393,12 @@ class SectionEditorViewModel @Inject constructor(
 
     private fun showOperationFailed(
         isSavingContent: Boolean = false,
-        isResettingDraft: Boolean = false,
+        isDiscardingChanges: Boolean = false,
     ) {
         _uiState.update {
             it.copy(
                 isSavingContent = if (isSavingContent) false else it.isSavingContent,
-                isResettingDraft = if (isResettingDraft) false else it.isResettingDraft,
+                isDiscardingChanges = if (isDiscardingChanges) false else it.isDiscardingChanges,
                 message = SectionEditorMessage.OperationFailed,
             )
         }
@@ -428,7 +432,7 @@ data class SectionEditorUiState(
     val userApproved: Boolean = false,
     val isLoading: Boolean = false,
     val isSavingContent: Boolean = false,
-    val isResettingDraft: Boolean = false,
+    val isDiscardingChanges: Boolean = false,
     val isAutoSavingDraft: Boolean = false,
     val isUpdatingApproval: Boolean = false,
     val isConsultingLlm: Boolean = false,
@@ -451,7 +455,6 @@ data class SectionEditorUiState(
 enum class SectionEditorMessage {
     DraftAutoSaved,
     ContentSaved,
-    DraftReset,
     MarkedApproved,
     MarkedUnapproved,
     OperationFailed,
