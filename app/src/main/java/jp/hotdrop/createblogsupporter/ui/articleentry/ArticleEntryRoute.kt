@@ -37,6 +37,7 @@ fun ArticleEntryRoute(
     onBack: () -> Unit,
     onPhase1Saved: () -> Unit,
     onGenerateOutline: (Long) -> Unit,
+    onEditTitle: (Long) -> Unit,
     onEditOutline: (Long) -> Unit,
     onEditSection: (Long, Long) -> Unit,
     onOpenPreview: (Long) -> Unit,
@@ -57,6 +58,7 @@ fun ArticleEntryRoute(
 
                 ArticlePhase.Phase2 -> ArticleEditorRoute(
                     onBack = onBack,
+                    onEditTitle = onEditTitle,
                     onEditOutline = onEditOutline,
                     onEditSection = onEditSection,
                     onOpenPreview = onOpenPreview,

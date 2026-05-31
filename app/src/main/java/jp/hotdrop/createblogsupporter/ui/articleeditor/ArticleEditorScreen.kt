@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -30,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -51,8 +49,7 @@ import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
 fun ArticleEditorScreen(
     uiState: ArticleEditorUiState,
     onBack: () -> Unit,
-    onTitleChanged: (String) -> Unit,
-    onSaveTitleClick: () -> Unit,
+    onEditTitleClick: (Long) -> Unit,
     onExportMarkdownClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
     onOpenPreviewClick: (Long) -> Unit,
@@ -89,8 +86,7 @@ fun ArticleEditorScreen(
             else -> ArticleEditorContent(
                 uiState = uiState,
                 innerPadding = innerPadding,
-                onTitleChanged = onTitleChanged,
-                onSaveTitleClick = onSaveTitleClick,
+                onEditTitleClick = onEditTitleClick,
                 onExportMarkdownClick = onExportMarkdownClick,
                 onEditOutlineClick = onEditOutlineClick,
                 onOpenPreviewClick = onOpenPreviewClick,
@@ -145,8 +141,7 @@ private fun ErrorContent(
 private fun ArticleEditorContent(
     uiState: ArticleEditorUiState,
     innerPadding: PaddingValues,
-    onTitleChanged: (String) -> Unit,
-    onSaveTitleClick: () -> Unit,
+    onEditTitleClick: (Long) -> Unit,
     onExportMarkdownClick: () -> Unit,
     onEditOutlineClick: (Long) -> Unit,
     onOpenPreviewClick: (Long) -> Unit,
@@ -160,90 +155,25 @@ private fun ArticleEditorContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        OutlinedTextField(
-            value = uiState.title,
-            onValueChange = onTitleChanged,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("articleEditor.titleInput")
-                .semantics { contentDescription = "article_title_input" },
-            label = { Text(text = stringResource(R.string.article_title_label)) },
-            isError = uiState.titleError,
-            supportingText = {
-                if (uiState.titleError) {
-                    Text(text = stringResource(R.string.article_title_required))
-                }
-            },
-            singleLine = false,
-            minLines = 1,
+        // タイトル
+        ArticleTitleSummary(
+            title = uiState.title,
+            articleId = uiState.articleId,
+            onEditTitleClick = onEditTitleClick,
         )
-        // タイトル保存ボタン
-        Button(
-            onClick = onSaveTitleClick,
-            enabled = !uiState.isSavingTitle,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("articleEditor.saveTitleButton")
-                .semantics { contentDescription = "save_article_title" },
-        ) {
-            if (uiState.isSavingTitle) {
-                CircularProgressIndicator()
-            } else {
-                Icon(imageVector = Icons.Default.Save, contentDescription = null)
-                Text(
-                    text = stringResource(R.string.save_title),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        }
-        MessageText(message = uiState.message)
-        ArticleCharacterCountSummary(uiState = uiState)
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // 目次
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.outline_heading),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            OutlinedButton(
-                onClick = {
-                    val articleId = uiState.articleId
-                    if (articleId != null) {
-                        onEditOutlineClick(articleId)
-                    }
-                },
-                enabled = uiState.articleId != null,
-                modifier = Modifier
-                    .testTag("articleEditor.editOutlineButton")
-                    .semantics { contentDescription = "edit_outline" },
-            ) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                Text(
-                    text = stringResource(R.string.edit_outline),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        }
-        if (uiState.sections.isEmpty()) {
-            Text(
-                text = stringResource(R.string.outline_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            uiState.sections.forEach { section ->
-                ArticleEditorSectionCard(
-                    section = section,
-                    onClick = { onSectionClick(section.id) },
-                )
-            }
-        }
+        ArticleOutline(
+            articleId = uiState.articleId,
+            sections = uiState.sections,
+            onEditOutlineClick = onEditOutlineClick,
+            onSectionClick = onSectionClick
+        )
+        ArticleCharacterCountSummary(uiState = uiState)
 
-        // ボタン
+        // 全文プレビューボタン
         OutlinedButton(
             onClick = {
                 val articleId = uiState.articleId
@@ -263,6 +193,8 @@ private fun ArticleEditorContent(
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
+
+        // Markdown出力ボタン
         Button(
             onClick = onExportMarkdownClick,
             enabled = !uiState.isExportingMarkdown,
@@ -278,6 +210,110 @@ private fun ArticleEditorContent(
                 Text(
                     text = stringResource(R.string.export_markdown),
                     modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+        MessageText(message = uiState.message)
+    }
+}
+
+@Composable
+private fun ArticleTitleSummary(
+    title: String,
+    articleId: Long?,
+    onEditTitleClick: (Long) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.article_title_label),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            OutlinedButton(
+                onClick = {
+                    if (articleId != null) {
+                        onEditTitleClick(articleId)
+                    }
+                },
+                enabled = articleId != null,
+                modifier = Modifier
+                    .testTag("articleEditor.editTitleButton")
+                    .semantics { contentDescription = "edit_article_title" },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null
+                )
+                Text(
+                    text = stringResource(R.string.edit_article_title_button),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .testTag("articleEditor.titleText"),
+        )
+    }
+}
+
+@Composable
+private fun ArticleOutline(
+    articleId: Long?,
+    sections: List<ArticleEditorSectionUiState>,
+    onEditOutlineClick: (Long) -> Unit,
+    onSectionClick: (Long) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.outline_heading),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            OutlinedButton(
+                onClick = {
+                    if (articleId != null) {
+                        onEditOutlineClick(articleId)
+                    }
+                },
+                enabled = articleId != null,
+                modifier = Modifier
+                    .testTag("articleEditor.editOutlineButton")
+                    .semantics { contentDescription = "edit_outline" },
+            ) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.edit_outline),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+        if (sections.isEmpty()) {
+            Text(
+                text = stringResource(R.string.outline_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            sections.forEach { section ->
+                ArticleEditorSectionCard(
+                    section = section,
+                    onClick = { onSectionClick(section.id) },
                 )
             }
         }
@@ -389,9 +425,6 @@ private fun ArticleApprovalChip(
 private fun MessageText(message: ArticleEditorMessage?) {
     val text = when (message) {
         null -> null
-        ArticleEditorMessage.TitleSaved -> stringResource(R.string.article_title_saved)
-        ArticleEditorMessage.TitleRequired -> stringResource(R.string.article_title_required)
-        ArticleEditorMessage.SaveFailed -> stringResource(R.string.article_title_save_failed)
         ArticleEditorMessage.MarkdownExported -> stringResource(R.string.markdown_exported)
         ArticleEditorMessage.ExportTitleRequired -> stringResource(R.string.markdown_export_title_required)
         ArticleEditorMessage.ExportNotPhase2OrMissing -> stringResource(R.string.markdown_export_not_phase2)
@@ -441,8 +474,7 @@ private fun ArticleEditorReadyPreview() {
                 sections = PreviewSections,
             ),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},
@@ -453,18 +485,17 @@ private fun ArticleEditorReadyPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun ArticleEditorSavingMessagePreview() {
+private fun ArticleEditorExportedMessagePreview() {
     CreateBlogSupporterTheme {
         ArticleEditorScreen(
             uiState = ArticleEditorUiState(
                 articleId = 1,
                 title = "Compose Navigation を実装から理解する",
                 sections = PreviewSections,
-                message = ArticleEditorMessage.TitleSaved,
+                message = ArticleEditorMessage.MarkdownExported,
             ),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},
@@ -485,8 +516,7 @@ private fun ArticleEditorExportingPreview() {
                 isExportingMarkdown = true,
             ),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},
@@ -507,8 +537,7 @@ private fun ArticleEditorExportBlockedPreview() {
                 message = ArticleEditorMessage.ExportUnapprovedSections(1),
             ),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},
@@ -524,8 +553,7 @@ private fun ArticleEditorLoadingPreview() {
         ArticleEditorScreen(
             uiState = ArticleEditorUiState(isLoading = true),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},
@@ -541,8 +569,7 @@ private fun ArticleEditorNotFoundPreview() {
         ArticleEditorScreen(
             uiState = ArticleEditorUiState(error = ArticleEditorError.NotFound),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},
@@ -558,8 +585,7 @@ private fun ArticleEditorNotPhase2Preview() {
         ArticleEditorScreen(
             uiState = ArticleEditorUiState(error = ArticleEditorError.NotPhase2),
             onBack = {},
-            onTitleChanged = {},
-            onSaveTitleClick = {},
+            onEditTitleClick = {},
             onExportMarkdownClick = {},
             onEditOutlineClick = {},
             onOpenPreviewClick = {},

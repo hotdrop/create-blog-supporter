@@ -14,6 +14,7 @@ import androidx.core.net.toUri
 @Composable
 fun ArticleEditorRoute(
     onBack: () -> Unit,
+    onEditTitle: (Long) -> Unit,
     onEditOutline: (Long) -> Unit,
     onEditSection: (Long, Long) -> Unit,
     onOpenPreview: (Long) -> Unit,
@@ -52,8 +53,9 @@ fun ArticleEditorRoute(
     ArticleEditorScreen(
         uiState = uiState.value,
         onBack = onBack,
-        onTitleChanged = viewModel::onTitleChanged,
-        onSaveTitleClick = viewModel::onSaveTitleClick,
+        onEditTitleClick = { articleId ->
+            onEditTitle(articleId)
+        },
         onExportMarkdownClick = viewModel::onExportMarkdownClick,
         onEditOutlineClick = { articleId ->
             onEditOutline(articleId)

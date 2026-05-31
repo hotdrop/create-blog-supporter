@@ -11,8 +11,6 @@ import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftHeaderUs
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownResult
 import jp.hotdrop.createblogsupporter.domain.usecase.ExportMarkdownUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleResult
-import jp.hotdrop.createblogsupporter.domain.usecase.UpdatePhase2TitleUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,11 +27,9 @@ class ArticleEditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     observeArticleDraftHeaderUseCase: ObserveArticleDraftHeaderUseCase,
     observeArticleSectionsUseCase: ObserveArticleSectionsUseCase,
-    private val updatePhase2TitleUseCase: UpdatePhase2TitleUseCase,
     private val exportMarkdownUseCase: ExportMarkdownUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
-    private var hasLoadedTitle = false
 
     private val _uiState = MutableStateFlow(ArticleEditorUiState(isLoading = true))
     val uiState: StateFlow<ArticleEditorUiState> = _uiState.asStateFlow()
@@ -68,11 +64,10 @@ class ArticleEditorViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 articleId = article.id,
-                                title = if (hasLoadedTitle) it.title else article.title,
+                                title = article.title,
                                 error = null,
                             )
                         }
-                        hasLoadedTitle = true
                     }
                 }
             }
@@ -81,60 +76,6 @@ class ArticleEditorViewModel @Inject constructor(
             observeArticleSectionsUseCase(articleId).collect { sections ->
                 _uiState.update {
                     it.copy(sections = sections.map { section -> section.toUiState() })
-                }
-            }
-        }
-    }
-
-    fun onTitleChanged(value: String) {
-        _uiState.update {
-            it.copy(
-                title = value,
-                titleError = false,
-                message = null,
-            )
-        }
-    }
-
-    fun onSaveTitleClick() {
-        val current = _uiState.value
-        if (current.isSavingTitle) return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isSavingTitle = true,
-                    titleError = false,
-                    message = null,
-                )
-            }
-            when (updatePhase2TitleUseCase(articleId, current.title)) {
-                UpdatePhase2TitleResult.Updated -> {
-                    _uiState.update {
-                        it.copy(
-                            isSavingTitle = false,
-                            title = current.title.trim(),
-                            message = ArticleEditorMessage.TitleSaved,
-                        )
-                    }
-                }
-
-                UpdatePhase2TitleResult.InvalidTitle -> {
-                    _uiState.update {
-                        it.copy(
-                            isSavingTitle = false,
-                            titleError = true,
-                            message = ArticleEditorMessage.TitleRequired,
-                        )
-                    }
-                }
-
-                UpdatePhase2TitleResult.NotPhase2OrMissing -> {
-                    _uiState.update {
-                        it.copy(
-                            isSavingTitle = false,
-                            message = ArticleEditorMessage.SaveFailed,
-                        )
-                    }
                 }
             }
         }
@@ -223,9 +164,7 @@ data class ArticleEditorUiState(
     val title: String = "",
     val sections: List<ArticleEditorSectionUiState> = emptyList(),
     val isLoading: Boolean = false,
-    val isSavingTitle: Boolean = false,
     val isExportingMarkdown: Boolean = false,
-    val titleError: Boolean = false,
     val message: ArticleEditorMessage? = null,
     val error: ArticleEditorError? = null,
 ) {
@@ -249,9 +188,6 @@ data class ArticleEditorSectionUiState(
 }
 
 sealed interface ArticleEditorMessage {
-    data object TitleSaved : ArticleEditorMessage
-    data object TitleRequired : ArticleEditorMessage
-    data object SaveFailed : ArticleEditorMessage
     data object MarkdownExported : ArticleEditorMessage
     data object ExportTitleRequired : ArticleEditorMessage
     data object ExportNotPhase2OrMissing : ArticleEditorMessage

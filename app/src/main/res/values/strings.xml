@@ -41,7 +41,9 @@
     <string name="create_article">記事メモを作成</string>
     <string name="article_editor_title">記事編集</string>
     <string name="article_editor_not_phase2">この記事はまだ執筆フェーズではありません。</string>
-    <string name="article_title_label">記事タイトル</string>
+    <string name="article_title_edit_title">記事タイトル編集</string>
+    <string name="article_title_label">タイトル</string>
+    <string name="edit_article_title_button">編集する</string>
     <string name="article_title_required">記事タイトルを入力してください。</string>
     <string name="save_title">タイトルを保存</string>
     <string name="article_title_saved">記事タイトルを保存しました。</string>
@@ -57,7 +59,7 @@
     <string name="article_total_character_count_format">総文字数: %1$,d字</string>
     <string name="section_character_count_format">%1$,d字</string>
     <string name="current_section_character_count_format">この章: %1$,d字</string>
-    <string name="edit_outline">目次を編集</string>
+    <string name="edit_outline">編集する</string>
     <string name="outline_empty">章節がありません。</string>
     <string name="full_preview_heading">全文プレビュー</string>
     <string name="article_preview_empty">保存済み本文がある章節はまだありません。</string>
