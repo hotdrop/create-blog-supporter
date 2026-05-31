@@ -11,12 +11,9 @@ import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
 import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadingCheckResult
 import jp.hotdrop.createblogsupporter.domain.model.ProofreadingRequest
-import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
-import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
 import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
 import jp.hotdrop.createblogsupporter.domain.usecase.CheckSectionProofreadingUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionPastePromptUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ResetArticleSectionDraftToSavedUseCase
@@ -29,8 +26,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -48,7 +45,6 @@ class SectionEditorViewModel @Inject constructor(
     private val saveArticleSectionContentUseCase: SaveArticleSectionContentUseCase,
     private val resetArticleSectionDraftToSavedUseCase: ResetArticleSectionDraftToSavedUseCase,
     private val updateArticleSectionUserApprovedUseCase: UpdateArticleSectionUserApprovedUseCase,
-    private val generateSectionPastePromptUseCase: GenerateSectionPastePromptUseCase,
     private val checkSectionProofreadingUseCase: CheckSectionProofreadingUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
@@ -59,9 +55,6 @@ class SectionEditorViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SectionEditorUiState(isLoading = true))
     val uiState: StateFlow<SectionEditorUiState> = _uiState.asStateFlow()
-
-    private val _copyEvents = MutableSharedFlow<String>()
-    val copyEvents: SharedFlow<String> = _copyEvents.asSharedFlow()
 
     private val _closeEvents = MutableSharedFlow<Unit>()
     val closeEvents: SharedFlow<Unit> = _closeEvents.asSharedFlow()
@@ -255,55 +248,6 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
-    fun onConsultationInputChanged(value: String) {
-        _uiState.update {
-            it.copy(
-                consultationInput = value,
-                consultationMessage = null,
-            )
-        }
-    }
-
-    fun onCreatePastePromptClick() {
-        val current = _uiState.value
-        val targetSection = SectionConsultationSectionContext(
-            orderIndex = current.orderIndex,
-            heading = current.heading,
-            savedContent = current.content,
-            draftContent = current.draftContent,
-            isTarget = true,
-        )
-        val outlineContext = current.outlineContext
-            .filterNot { it.orderIndex == current.orderIndex || it.isTarget }
-            .plus(targetSection)
-            .sortedBy { it.orderIndex }
-        val pastePrompt = generateSectionPastePromptUseCase(
-            SectionConsultationRequest(
-                articleTitle = current.articleTitle,
-                topic = current.topic,
-                detail = current.detail,
-                targetSection = targetSection,
-                outlineContext = outlineContext,
-                userQuestion = current.consultationInput.trim(),
-            ),
-        )
-        _uiState.update {
-            it.copy(
-                consultationAnswer = pastePrompt,
-                consultationMessage = null,
-            )
-        }
-    }
-
-    fun onCopyConsultationAnswerClick() {
-        val answer = _uiState.value.consultationAnswer
-        if (answer.isBlank()) return
-        viewModelScope.launch {
-            _copyEvents.emit(answer)
-            _uiState.update { it.copy(consultationMessage = SectionEditorConsultationMessage.Copied) }
-        }
-    }
-
     fun onProofreadClick() {
         val current = _uiState.value
         if (current.isProofreading || current.draftContent.isBlank() && current.content.isBlank()) return
@@ -374,9 +318,6 @@ class SectionEditorViewModel @Inject constructor(
                 content = section.content,
                 draftContent = if (hasLocalDraftEdit) it.draftContent else section.draftContent,
                 userApproved = section.userApproved,
-                outlineContext = sections.map { sectionContext ->
-                    sectionContext.toConsultationContext(isTarget = sectionContext.id == sectionId)
-                },
             )
         }
     }
@@ -454,7 +395,6 @@ data class SectionEditorUiState(
     val orderIndex: Int = 0,
     val content: String = "",
     val draftContent: String = "",
-    val outlineContext: List<SectionConsultationSectionContext> = emptyList(),
     val userApproved: Boolean = false,
     val isLoading: Boolean = false,
     val isSavingContent: Boolean = false,
@@ -464,9 +404,6 @@ data class SectionEditorUiState(
     val isProofreading: Boolean = false,
     val proofreadingResult: ProofreadingCheckResult? = null,
     val proofreadingMessage: SectionEditorProofreadingMessage? = null,
-    val consultationInput: String = "",
-    val consultationAnswer: String = "",
-    val consultationMessage: SectionEditorConsultationMessage? = null,
     val message: SectionEditorMessage? = null,
     val error: SectionEditorError? = null,
 ) {
@@ -488,10 +425,6 @@ enum class SectionEditorMessage {
     OperationFailed,
 }
 
-enum class SectionEditorConsultationMessage {
-    Copied,
-}
-
 enum class SectionEditorProofreadingMessage {
     ModelNotConfigured,
     ModelInitializationFailed,
@@ -503,12 +436,3 @@ enum class SectionEditorError {
     NotFound,
     NotPhase2,
 }
-
-private fun ArticleSection.toConsultationContext(isTarget: Boolean): SectionConsultationSectionContext =
-    SectionConsultationSectionContext(
-        orderIndex = orderIndex,
-        heading = heading,
-        savedContent = content,
-        draftContent = draftContent,
-        isTarget = isTarget,
-    )

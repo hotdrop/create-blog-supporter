@@ -10,6 +10,7 @@ object AppDestination {
     const val OutlineProposalsPattern = "article/{articleId}/outline-proposals"
     const val OutlineEditPattern = "article/{articleId}/outline-edit"
     const val SectionEditPattern = "article/{articleId}/sections/{sectionId}"
+    const val SectionConsultationPattern = "article/{articleId}/sections/{sectionId}/consultation"
 
     fun editArticle(articleId: Long): String = "article/$articleId"
 
@@ -22,4 +23,7 @@ object AppDestination {
     fun outlineEdit(articleId: Long): String = "article/$articleId/outline-edit"
 
     fun sectionEdit(articleId: Long, sectionId: Long): String = "article/$articleId/sections/$sectionId"
+
+    fun sectionConsultation(articleId: Long, sectionId: Long): String =
+        "article/$articleId/sections/$sectionId/consultation"
 }

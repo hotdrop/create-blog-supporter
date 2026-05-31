@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -55,9 +54,7 @@ fun SectionEditorScreen(
     onDraftContentChanged: (String) -> Unit,
     onSaveContentClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
-    onConsultationInputChanged: (String) -> Unit,
-    onCreatePastePromptClick: () -> Unit,
-    onCopyConsultationAnswerClick: () -> Unit,
+    onOpenConsultationClick: () -> Unit,
     onProofreadClick: () -> Unit = {},
     onCancelProofreadClick: () -> Unit = {},
     showDiscardChangesDialog: Boolean = false,
@@ -97,9 +94,7 @@ fun SectionEditorScreen(
                 onDraftContentChanged = onDraftContentChanged,
                 onSaveContentClick = onSaveContentClick,
                 onUserApprovedChanged = onUserApprovedChanged,
-                onConsultationInputChanged = onConsultationInputChanged,
-                onCreatePastePromptClick = onCreatePastePromptClick,
-                onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
+                onOpenConsultationClick = onOpenConsultationClick,
                 onProofreadClick = onProofreadClick,
                 onCancelProofreadClick = onCancelProofreadClick,
             )
@@ -162,9 +157,7 @@ private fun SectionEditorContent(
     onDraftContentChanged: (String) -> Unit,
     onSaveContentClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
-    onConsultationInputChanged: (String) -> Unit,
-    onCreatePastePromptClick: () -> Unit,
-    onCopyConsultationAnswerClick: () -> Unit,
+    onOpenConsultationClick: () -> Unit,
     onProofreadClick: () -> Unit,
     onCancelProofreadClick: () -> Unit,
 ) {
@@ -195,21 +188,6 @@ private fun SectionEditorContent(
             label = { Text(text = stringResource(R.string.section_draft_content_label)) },
             minLines = 10,
         )
-        Text(
-            text = stringResource(
-                R.string.current_section_character_count_format,
-                uiState.currentCharacterCount,
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.testTag("sectionEditor.currentCharacterCount"),
-        )
-        LlmConsultationContent(
-            uiState = uiState,
-            onConsultationInputChanged = onConsultationInputChanged,
-            onCreatePastePromptClick = onCreatePastePromptClick,
-            onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
-        )
         Button(
             onClick = onSaveContentClick,
             enabled = !uiState.isSavingContent,
@@ -227,6 +205,24 @@ private fun SectionEditorContent(
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
+        }
+        Text(
+            text = stringResource(
+                R.string.current_section_character_count_format,
+                uiState.currentCharacterCount,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag("sectionEditor.currentCharacterCount"),
+        )
+        Button(
+            onClick = onOpenConsultationClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.openConsultationButton")
+                .semantics { contentDescription = "open_section_consultation" },
+        ) {
+            Text(text = stringResource(R.string.open_section_consultation))
         }
         ProofreadingContent(
             uiState = uiState,
@@ -250,82 +246,6 @@ private fun SectionEditorContent(
                     .testTag("sectionEditor.approvedSwitch")
                     .semantics { contentDescription = "section_user_approved_switch" },
             )
-        }
-    }
-}
-
-@Composable
-private fun LlmConsultationContent(
-    uiState: SectionEditorUiState,
-    onConsultationInputChanged: (String) -> Unit,
-    onCreatePastePromptClick: () -> Unit,
-    onCopyConsultationAnswerClick: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.section_llm_consultation_heading),
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Text(
-            text = stringResource(R.string.section_llm_consultation_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedTextField(
-            value = uiState.consultationInput,
-            onValueChange = onConsultationInputChanged,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("sectionEditor.consultationInput")
-                .semantics { contentDescription = "section_chatgpt_request_note_input" },
-            label = { Text(text = stringResource(R.string.section_llm_consultation_label)) },
-            placeholder = { Text(text = stringResource(R.string.section_llm_consultation_placeholder)) },
-            minLines = 3,
-        )
-        ConsultationMessageText(message = uiState.consultationMessage)
-        Button(
-            onClick = onCreatePastePromptClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("sectionEditor.createPastePromptButton")
-                .semantics { contentDescription = "create_section_chatgpt_request" },
-        ) {
-            Text(text = stringResource(R.string.section_llm_ask))
-        }
-        if (uiState.consultationAnswer.isNotBlank()) {
-            Card(
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.testTag("sectionEditor.consultationAnswer"),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.section_llm_answer_heading),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Text(
-                        text = uiState.consultationAnswer,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    OutlinedButton(
-                        onClick = onCopyConsultationAnswerClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("sectionEditor.copyConsultationButton")
-                            .semantics { contentDescription = "copy_section_chatgpt_request" },
-                    ) {
-                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
-                        Text(
-                            text = stringResource(R.string.section_llm_copy_answer),
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -541,21 +461,6 @@ private fun DiscardChangesDialog(
     )
 }
 
-@Composable
-private fun ConsultationMessageText(message: SectionEditorConsultationMessage?) {
-    val text = when (message) {
-        null -> null
-        SectionEditorConsultationMessage.Copied -> stringResource(R.string.section_llm_copied)
-    }
-    if (text != null) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
 private val PreviewState = SectionEditorUiState(
     articleTitle = "Compose Navigationの設計判断",
     topic = "Navigation Composeで画面遷移を整理した話",
@@ -577,9 +482,7 @@ private fun SectionEditorReadyPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -594,9 +497,7 @@ private fun SectionEditorLoadingPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -611,9 +512,7 @@ private fun SectionEditorNotFoundPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -628,9 +527,7 @@ private fun SectionEditorNotPhase2Preview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -645,9 +542,7 @@ private fun SectionEditorSavingPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -665,28 +560,7 @@ private fun SectionEditorEmptyContentPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SectionEditorConsultationInputPreview() {
-    CreateBlogSupporterTheme {
-        SectionEditorScreen(
-            uiState = PreviewState.copy(
-                consultationInput = "この章では何を書けばいいでしょうか？",
-            ),
-            onBack = {},
-            onDraftContentChanged = {},
-            onSaveContentClick = {},
-            onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -701,9 +575,7 @@ private fun SectionEditorProofreadingPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -730,9 +602,7 @@ private fun SectionEditorProofreadingResultPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -752,9 +622,7 @@ private fun SectionEditorProofreadingNoIssuesPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -771,9 +639,7 @@ private fun SectionEditorProofreadingModelNotConfiguredPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
         )
     }
 }
@@ -788,51 +654,8 @@ private fun SectionEditorDiscardChangesDialogPreview() {
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
+            onOpenConsultationClick = {},
             showDiscardChangesDialog = true,
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SectionEditorConsultationAnswerPreview() {
-    CreateBlogSupporterTheme {
-        SectionEditorScreen(
-            uiState = PreviewState.copy(
-                consultationInput = "実装で困ったところも自然に入れたいです。",
-                consultationAnswer = "ChatGPTへの依頼:\n以下の文脈をもとに、「現在の章」の完成本文案をテックブログ向けの自然な文章として作成してください。\n\n記事タイトル:\nCompose Navigationの設計判断",
-            ),
-            onBack = {},
-            onDraftContentChanged = {},
-            onSaveContentClick = {},
-            onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SectionEditorConsultationCopiedPreview() {
-    CreateBlogSupporterTheme {
-        SectionEditorScreen(
-            uiState = PreviewState.copy(
-                consultationInput = "清書の方向性を相談したいです。",
-                consultationAnswer = "ChatGPTへの依頼:\n現在の章の完成本文案を作成してください。",
-                consultationMessage = SectionEditorConsultationMessage.Copied,
-            ),
-            onBack = {},
-            onDraftContentChanged = {},
-            onSaveContentClick = {},
-            onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onCreatePastePromptClick = {},
-            onCopyConsultationAnswerClick = {},
         )
     }
 }

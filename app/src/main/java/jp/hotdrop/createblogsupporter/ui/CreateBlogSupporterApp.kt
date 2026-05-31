@@ -14,6 +14,7 @@ import jp.hotdrop.createblogsupporter.ui.articletitleedit.ArticleTitleEditRoute
 import jp.hotdrop.createblogsupporter.ui.navigation.AppDestination
 import jp.hotdrop.createblogsupporter.ui.outlineedit.OutlineEditRoute
 import jp.hotdrop.createblogsupporter.ui.outlineproposal.OutlineProposalRoute
+import jp.hotdrop.createblogsupporter.ui.sectionconsultation.SectionConsultationRoute
 import jp.hotdrop.createblogsupporter.ui.sectioneditor.SectionEditorRoute
 import jp.hotdrop.createblogsupporter.ui.settings.LlmSettingsRoute
 import jp.hotdrop.createblogsupporter.ui.theme.CreateBlogSupporterTheme
@@ -120,7 +121,23 @@ fun CreateBlogSupporterApp() {
                     navArgument("sectionId") { type = NavType.LongType },
                 ),
             ) {
+                val articleId = it.arguments?.getLong("articleId") ?: return@composable
+                val sectionId = it.arguments?.getLong("sectionId") ?: return@composable
                 SectionEditorRoute(
+                    onBack = { navController.popBackStack() },
+                    onOpenConsultation = {
+                        navController.navigate(AppDestination.sectionConsultation(articleId, sectionId))
+                    },
+                )
+            }
+            composable(
+                route = AppDestination.SectionConsultationPattern,
+                arguments = listOf(
+                    navArgument("articleId") { type = NavType.LongType },
+                    navArgument("sectionId") { type = NavType.LongType },
+                ),
+            ) {
+                SectionConsultationRoute(
                     onBack = { navController.popBackStack() },
                 )
             }
