@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# LiteRT-LM calls SDK classes and accessors from native code. Keep the SDK
+# intact so R8 does not rename or remove JNI-referenced members in release.
+-keep class com.google.ai.edge.litertlm.** { *; }

@@ -1,3 +1,24 @@
+# 2026/5/31 21:07 フィードバック
+
+## 作業内容
+- release/R8時にLiteRT-LMのJNI参照メソッドが削除・改名され、`nativeCreateConversation`で`mid == null`のSIGABRTが発生する問題を修正した。
+- LiteRT-LM SDK全体のkeep ruleを追加し、`litertlm-android`のバージョンを`0.12.0`へ固定した。
+
+## 開発改善フィードバック
+- 既存ルール・手順が障壁になった点: debugビルド中心の検証では、JNI/native SDKがR8で壊れる問題を検出できなかった。
+- 改善した方がよいルール・手順: LiteRT-LMやJNIを含む依存を追加・更新した場合は、releaseビルド後のmappingでSDKのJNI参照型が保持されているか確認するとよい。
+- 追加した方がよいルール・手順: `latest.release`など可変バージョンはrelease挙動が変わるため、少なくともnative/LLM系依存では固定バージョンを既定にするルールを検討するとよい。
+- docs/README/タスクメモ/テストなどへ反映した方がよい点: release版の手動確認手順に、目次案生成などLiteRT-LM実行パスの確認を含めるとよい。
+
+## 分類
+- タスク固有: LiteRT-LM 0.12.0とR8 keep ruleのreleaseクラッシュ対応。
+- 恒久対応候補: native/JNI依存追加時のrelease/R8検証、可変依存バージョン禁止または限定利用ルール。
+
+## 更新先候補
+- AGENTS.md: なし。恒久ルール本体は既存のLLM利用方針の範囲内。
+- .codex/skills/local-llm-litert/SKILL.md: LiteRT-LM依存の追加・更新時にrelease/R8 mappingと実機生成を確認する手順を追記する候補。
+- docs/README/task/tests など: release版手動確認チェックリストがある場合、LiteRT-LM生成パスを追加する候補。
+
 # 2026/5/31 09:59 フィードバック
 
 ## 作業内容
