@@ -78,6 +78,8 @@
     <string name="section_marked_approved">章節を確認済みにしました。</string>
     <string name="section_marked_unapproved">章節を未確認に戻しました。</string>
     <string name="section_operation_failed">章節本文を更新できませんでした。</string>
+    <string name="section_writing_support_heading">執筆支援</string>
+    <string name="section_writing_support_description">本文保存とは別に、依頼文作成や校正候補の確認を行えます。</string>
     <string name="open_section_consultation">LLM用依頼文を作成</string>
     <string name="section_consultation_title">LLM用の依頼文</string>
     <string name="section_llm_consultation_heading">LLM用の依頼文を作成</string>

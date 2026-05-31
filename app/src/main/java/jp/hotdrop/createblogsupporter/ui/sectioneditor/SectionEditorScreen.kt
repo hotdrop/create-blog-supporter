@@ -15,12 +15,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -215,17 +218,9 @@ private fun SectionEditorContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.testTag("sectionEditor.currentCharacterCount"),
         )
-        Button(
-            onClick = onOpenConsultationClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("sectionEditor.openConsultationButton")
-                .semantics { contentDescription = "open_section_consultation" },
-        ) {
-            Text(text = stringResource(R.string.open_section_consultation))
-        }
-        ProofreadingContent(
+        WritingSupportContent(
             uiState = uiState,
+            onOpenConsultationClick = onOpenConsultationClick,
             onProofreadClick = onProofreadClick,
             onCancelProofreadClick = onCancelProofreadClick,
         )
@@ -247,6 +242,48 @@ private fun SectionEditorContent(
                     .semantics { contentDescription = "section_user_approved_switch" },
             )
         }
+    }
+}
+
+@Composable
+private fun WritingSupportContent(
+    uiState: SectionEditorUiState,
+    onOpenConsultationClick: () -> Unit,
+    onProofreadClick: () -> Unit,
+    onCancelProofreadClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        HorizontalDivider()
+        Text(
+            text = stringResource(R.string.section_writing_support_heading),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(R.string.section_writing_support_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            onClick = onOpenConsultationClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.openConsultationButton")
+                .semantics { contentDescription = "open_section_consultation" },
+        ) {
+            Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null)
+            Text(
+                text = stringResource(R.string.open_section_consultation),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        ProofreadingContent(
+            uiState = uiState,
+            onProofreadClick = onProofreadClick,
+            onCancelProofreadClick = onCancelProofreadClick,
+        )
     }
 }
 
@@ -304,7 +341,7 @@ private fun ProofreadingContent(
                 }
             }
         } else {
-            Button(
+            OutlinedButton(
                 onClick = onProofreadClick,
                 enabled = uiState.currentCharacterCount > 0,
                 modifier = Modifier
@@ -312,7 +349,11 @@ private fun ProofreadingContent(
                     .testTag("sectionEditor.proofreadButton")
                     .semantics { contentDescription = "check_section_proofreading" },
             ) {
-                Text(text = stringResource(R.string.section_proofreading_check))
+                Icon(imageVector = Icons.Default.Check, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.section_proofreading_check),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
             }
         }
         uiState.proofreadingResult?.let { result ->
