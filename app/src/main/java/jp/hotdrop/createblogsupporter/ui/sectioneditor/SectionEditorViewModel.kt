@@ -7,13 +7,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.hotdrop.createblogsupporter.domain.model.ArticleDraft
 import jp.hotdrop.createblogsupporter.domain.model.ArticlePhase
 import jp.hotdrop.createblogsupporter.domain.model.ArticleSection
-import jp.hotdrop.createblogsupporter.domain.model.LlmSupportFailure
-import jp.hotdrop.createblogsupporter.domain.model.LlmSupportResult
 import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationRequest
 import jp.hotdrop.createblogsupporter.domain.model.SectionConsultationSectionContext
 import jp.hotdrop.createblogsupporter.domain.model.countEditableContentCharacters
 import jp.hotdrop.createblogsupporter.domain.usecase.ArticleSectionContentOperationResult
-import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionConsultationUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionPastePromptUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleDraftUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ObserveArticleSectionsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.ResetArticleSectionDraftToSavedUseCase
@@ -45,13 +43,12 @@ class SectionEditorViewModel @Inject constructor(
     private val saveArticleSectionContentUseCase: SaveArticleSectionContentUseCase,
     private val resetArticleSectionDraftToSavedUseCase: ResetArticleSectionDraftToSavedUseCase,
     private val updateArticleSectionUserApprovedUseCase: UpdateArticleSectionUserApprovedUseCase,
-    private val generateSectionConsultationUseCase: GenerateSectionConsultationUseCase,
+    private val generateSectionPastePromptUseCase: GenerateSectionPastePromptUseCase,
 ) : ViewModel() {
     private val articleId: Long = checkNotNull(savedStateHandle["articleId"])
     private val sectionId: Long = checkNotNull(savedStateHandle["sectionId"])
     private var hasLocalDraftEdit = false
     private var draftAutoSaveJob: Job? = null
-    private var consultationJob: Job? = null
 
     private val _uiState = MutableStateFlow(SectionEditorUiState(isLoading = true))
     val uiState: StateFlow<SectionEditorUiState> = _uiState.asStateFlow()
@@ -258,67 +255,33 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
-    fun onAskLlmClick() {
+    fun onCreatePastePromptClick() {
         val current = _uiState.value
-        if (current.isConsultingLlm) return
-        val question = current.consultationInput.trim()
-        if (question.isBlank()) {
-            _uiState.update { it.copy(consultationMessage = SectionEditorConsultationMessage.EmptyQuestion) }
-            return
-        }
-        consultationJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isConsultingLlm = true,
-                    consultationAnswer = "",
-                    consultationMessage = null,
-                )
-            }
-            val targetSection = SectionConsultationSectionContext(
-                orderIndex = current.orderIndex,
-                heading = current.heading,
-                savedContent = current.content,
-                draftContent = current.draftContent,
-                isTarget = true,
-            )
-            val outlineContext = current.outlineContext
-                .filterNot { it.orderIndex == current.orderIndex || it.isTarget }
-                .plus(targetSection)
-                .sortedBy { it.orderIndex }
-            when (
-                val result = generateSectionConsultationUseCase(
-                    SectionConsultationRequest(
-                        articleTitle = current.articleTitle,
-                        topic = current.topic,
-                        detail = current.detail,
-                        targetSection = targetSection,
-                        outlineContext = outlineContext,
-                        userQuestion = question,
-                    ),
-                )
-            ) {
-                is LlmSupportResult.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isConsultingLlm = false,
-                            consultationAnswer = result.value.answer,
-                            consultationMessage = null,
-                        )
-                    }
-                }
-
-                is LlmSupportResult.Failure -> showConsultationFailed(result.reason)
-            }
-        }
-    }
-
-    fun onCancelLlmClick() {
-        consultationJob?.cancel()
-        consultationJob = null
+        val targetSection = SectionConsultationSectionContext(
+            orderIndex = current.orderIndex,
+            heading = current.heading,
+            savedContent = current.content,
+            draftContent = current.draftContent,
+            isTarget = true,
+        )
+        val outlineContext = current.outlineContext
+            .filterNot { it.orderIndex == current.orderIndex || it.isTarget }
+            .plus(targetSection)
+            .sortedBy { it.orderIndex }
+        val pastePrompt = generateSectionPastePromptUseCase(
+            SectionConsultationRequest(
+                articleTitle = current.articleTitle,
+                topic = current.topic,
+                detail = current.detail,
+                targetSection = targetSection,
+                outlineContext = outlineContext,
+                userQuestion = current.consultationInput.trim(),
+            ),
+        )
         _uiState.update {
             it.copy(
-                isConsultingLlm = false,
-                consultationMessage = SectionEditorConsultationMessage.Cancelled,
+                consultationAnswer = pastePrompt,
+                consultationMessage = null,
             )
         }
     }
@@ -404,20 +367,6 @@ class SectionEditorViewModel @Inject constructor(
         }
     }
 
-    private fun showConsultationFailed(reason: LlmSupportFailure) {
-        _uiState.update {
-            it.copy(
-                isConsultingLlm = false,
-                consultationMessage = when (reason) {
-                    LlmSupportFailure.ModelNotConfigured,
-                    LlmSupportFailure.ModelFileMissing,
-                    -> SectionEditorConsultationMessage.ModelNotConfigured
-                    LlmSupportFailure.InitializationFailed -> SectionEditorConsultationMessage.ModelInitializationFailed
-                    else -> SectionEditorConsultationMessage.GenerationFailed
-                },
-            )
-        }
-    }
 }
 
 data class SectionEditorUiState(
@@ -435,7 +384,6 @@ data class SectionEditorUiState(
     val isDiscardingChanges: Boolean = false,
     val isAutoSavingDraft: Boolean = false,
     val isUpdatingApproval: Boolean = false,
-    val isConsultingLlm: Boolean = false,
     val consultationInput: String = "",
     val consultationAnswer: String = "",
     val consultationMessage: SectionEditorConsultationMessage? = null,
@@ -461,11 +409,6 @@ enum class SectionEditorMessage {
 }
 
 enum class SectionEditorConsultationMessage {
-    EmptyQuestion,
-    ModelNotConfigured,
-    ModelInitializationFailed,
-    GenerationFailed,
-    Cancelled,
     Copied,
 }
 

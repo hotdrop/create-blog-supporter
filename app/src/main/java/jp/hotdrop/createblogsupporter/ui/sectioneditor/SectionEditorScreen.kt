@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -55,8 +54,7 @@ fun SectionEditorScreen(
     onSaveContentClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
     onConsultationInputChanged: (String) -> Unit,
-    onAskLlmClick: () -> Unit,
-    onCancelLlmClick: () -> Unit,
+    onCreatePastePromptClick: () -> Unit,
     onCopyConsultationAnswerClick: () -> Unit,
     showDiscardChangesDialog: Boolean = false,
     onDismissDiscardChangesDialog: () -> Unit = {},
@@ -96,8 +94,7 @@ fun SectionEditorScreen(
                 onSaveContentClick = onSaveContentClick,
                 onUserApprovedChanged = onUserApprovedChanged,
                 onConsultationInputChanged = onConsultationInputChanged,
-                onAskLlmClick = onAskLlmClick,
-                onCancelLlmClick = onCancelLlmClick,
+                onCreatePastePromptClick = onCreatePastePromptClick,
                 onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
             )
         }
@@ -160,8 +157,7 @@ private fun SectionEditorContent(
     onSaveContentClick: () -> Unit,
     onUserApprovedChanged: (Boolean) -> Unit,
     onConsultationInputChanged: (String) -> Unit,
-    onAskLlmClick: () -> Unit,
-    onCancelLlmClick: () -> Unit,
+    onCreatePastePromptClick: () -> Unit,
     onCopyConsultationAnswerClick: () -> Unit,
 ) {
     Column(
@@ -203,8 +199,7 @@ private fun SectionEditorContent(
         LlmConsultationContent(
             uiState = uiState,
             onConsultationInputChanged = onConsultationInputChanged,
-            onAskLlmClick = onAskLlmClick,
-            onCancelLlmClick = onCancelLlmClick,
+            onCreatePastePromptClick = onCreatePastePromptClick,
             onCopyConsultationAnswerClick = onCopyConsultationAnswerClick,
         )
         Button(
@@ -250,8 +245,7 @@ private fun SectionEditorContent(
 private fun LlmConsultationContent(
     uiState: SectionEditorUiState,
     onConsultationInputChanged: (String) -> Unit,
-    onAskLlmClick: () -> Unit,
-    onCancelLlmClick: () -> Unit,
+    onCreatePastePromptClick: () -> Unit,
     onCopyConsultationAnswerClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -267,67 +261,23 @@ private fun LlmConsultationContent(
         OutlinedTextField(
             value = uiState.consultationInput,
             onValueChange = onConsultationInputChanged,
-            enabled = !uiState.isConsultingLlm,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("sectionEditor.consultationInput")
-                .semantics { contentDescription = "section_llm_consultation_input" },
+                .semantics { contentDescription = "section_chatgpt_request_note_input" },
             label = { Text(text = stringResource(R.string.section_llm_consultation_label)) },
             placeholder = { Text(text = stringResource(R.string.section_llm_consultation_placeholder)) },
             minLines = 3,
         )
         ConsultationMessageText(message = uiState.consultationMessage)
-        if (uiState.isConsultingLlm) {
-            Card(shape = RoundedCornerShape(8.dp)) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        CircularProgressIndicator()
-                        Column {
-                            Text(
-                                text = stringResource(R.string.section_llm_processing_title),
-                                style = MaterialTheme.typography.titleSmall,
-                            )
-                            Text(
-                                text = stringResource(R.string.section_llm_processing_message),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    OutlinedButton(
-                        onClick = onCancelLlmClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("sectionEditor.cancelLlmButton")
-                            .semantics { contentDescription = "cancel_section_llm_consultation" },
-                    ) {
-                        Text(text = stringResource(R.string.section_llm_cancel))
-                    }
-                }
-            }
-        } else {
-            Button(
-                onClick = onAskLlmClick,
-                enabled = uiState.consultationInput.isNotBlank(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("sectionEditor.askLlmButton")
-                    .semantics { contentDescription = "ask_section_llm" },
-            ) {
-                Icon(imageVector = Icons.Default.Psychology, contentDescription = null)
-                Text(
-                    text = stringResource(R.string.section_llm_ask),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
+        Button(
+            onClick = onCreatePastePromptClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sectionEditor.createPastePromptButton")
+                .semantics { contentDescription = "create_section_chatgpt_request" },
+        ) {
+            Text(text = stringResource(R.string.section_llm_ask))
         }
         if (uiState.consultationAnswer.isNotBlank()) {
             Card(
@@ -353,7 +303,7 @@ private fun LlmConsultationContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("sectionEditor.copyConsultationButton")
-                            .semantics { contentDescription = "copy_section_llm_answer" },
+                            .semantics { contentDescription = "copy_section_chatgpt_request" },
                     ) {
                         Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
                         Text(
@@ -430,13 +380,6 @@ private fun DiscardChangesDialog(
 private fun ConsultationMessageText(message: SectionEditorConsultationMessage?) {
     val text = when (message) {
         null -> null
-        SectionEditorConsultationMessage.EmptyQuestion -> stringResource(R.string.section_llm_empty_question)
-        SectionEditorConsultationMessage.ModelNotConfigured -> stringResource(R.string.section_llm_model_not_configured)
-        SectionEditorConsultationMessage.ModelInitializationFailed -> {
-            stringResource(R.string.section_llm_model_initialization_failed)
-        }
-        SectionEditorConsultationMessage.GenerationFailed -> stringResource(R.string.section_llm_generation_failed)
-        SectionEditorConsultationMessage.Cancelled -> stringResource(R.string.section_llm_cancelled)
         SectionEditorConsultationMessage.Copied -> stringResource(R.string.section_llm_copied)
     }
     if (text != null) {
@@ -470,8 +413,7 @@ private fun SectionEditorReadyPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -488,8 +430,7 @@ private fun SectionEditorLoadingPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -506,8 +447,7 @@ private fun SectionEditorNotFoundPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -524,8 +464,7 @@ private fun SectionEditorNotPhase2Preview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -542,8 +481,7 @@ private fun SectionEditorSavingPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -563,8 +501,7 @@ private fun SectionEditorEmptyContentPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -583,29 +520,7 @@ private fun SectionEditorConsultationInputPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
-            onCopyConsultationAnswerClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SectionEditorConsultingPreview() {
-    CreateBlogSupporterTheme {
-        SectionEditorScreen(
-            uiState = PreviewState.copy(
-                consultationInput = "雑なメモを記事向けに整理する観点をください。",
-                isConsultingLlm = true,
-            ),
-            onBack = {},
-            onDraftContentChanged = {},
-            onSaveContentClick = {},
-            onUserApprovedChanged = {},
-            onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -622,8 +537,7 @@ private fun SectionEditorDiscardChangesDialogPreview() {
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
             showDiscardChangesDialog = true,
         )
@@ -636,16 +550,15 @@ private fun SectionEditorConsultationAnswerPreview() {
     CreateBlogSupporterTheme {
         SectionEditorScreen(
             uiState = PreviewState.copy(
-                consultationInput = "この章では何を書けばいいでしょうか？",
-                consultationAnswer = "背景では、最初に困っていたこと、既存の構成で読みづらかった点、RouteとScreenを分ける判断につながった理由を順に整理すると書きやすいです。",
+                consultationInput = "実装で困ったところも自然に入れたいです。",
+                consultationAnswer = "ChatGPTへの依頼:\n以下の文脈をもとに、「現在の章」の完成本文案をテックブログ向けの自然な文章として作成してください。\n\n記事タイトル:\nCompose Navigationの設計判断",
             ),
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }
@@ -653,20 +566,20 @@ private fun SectionEditorConsultationAnswerPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun SectionEditorConsultationErrorPreview() {
+private fun SectionEditorConsultationCopiedPreview() {
     CreateBlogSupporterTheme {
         SectionEditorScreen(
             uiState = PreviewState.copy(
                 consultationInput = "清書の方向性を相談したいです。",
-                consultationMessage = SectionEditorConsultationMessage.ModelNotConfigured,
+                consultationAnswer = "ChatGPTへの依頼:\n現在の章の完成本文案を作成してください。",
+                consultationMessage = SectionEditorConsultationMessage.Copied,
             ),
             onBack = {},
             onDraftContentChanged = {},
             onSaveContentClick = {},
             onUserApprovedChanged = {},
             onConsultationInputChanged = {},
-            onAskLlmClick = {},
-            onCancelLlmClick = {},
+            onCreatePastePromptClick = {},
             onCopyConsultationAnswerClick = {},
         )
     }

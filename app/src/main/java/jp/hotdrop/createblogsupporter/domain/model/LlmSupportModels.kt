@@ -52,10 +52,6 @@ data class SectionConsultationSectionContext(
     val isTarget: Boolean = false,
 )
 
-data class SectionConsultationResponse(
-    val answer: String,
-)
-
 data class SectionImprovementRequest(
     val articleTitle: String,
     val sectionHeading: String,

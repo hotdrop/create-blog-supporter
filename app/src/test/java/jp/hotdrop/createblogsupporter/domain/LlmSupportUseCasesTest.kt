@@ -15,8 +15,8 @@ import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmClient
 import jp.hotdrop.createblogsupporter.domain.usecase.BlogSupportLlmRequest
 import jp.hotdrop.createblogsupporter.domain.usecase.CheckSectionProofreadingUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateOutlineProposalsUseCase
-import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionConsultationUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionImprovementSuggestionsUseCase
+import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionPastePromptUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateSectionSummaryUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.GenerateTitleProposalsUseCase
 import jp.hotdrop.createblogsupporter.domain.usecase.LlmSupportException
@@ -250,36 +250,36 @@ class LlmSupportUseCasesTest {
     }
 
     @Test
-    fun generateSectionConsultation_returnsAnswerWithArticleContextWithoutChangingSectionContent() = runBlocking {
+    fun generateSectionPastePrompt_returnsRequestWithArticleContextWithoutChangingSectionContent() {
         val section = section(
             content = "保存済み本文",
             draftContent = "編集中本文",
         )
-        val client = FakeBlogSupportLlmClient("この章では背景、判断理由、実装前の困りごとを短く整理するとよいです。")
 
-        val result = GenerateSectionConsultationUseCase(client)(
+        val prompt = GenerateSectionPastePromptUseCase()(
             consultationRequest(section = section),
-        ).successValue()
+        )
 
-        val prompt = client.requests.single().prompt
-        assertEquals("この章では背景、判断理由、実装前の困りごとを短く整理するとよいです。", result.answer)
+        assertTrue(prompt.contains("現在の章」の完成本文案"))
+        assertTrue(prompt.contains("現在の章の完成本文案を日本語で作成してください。"))
+        assertFalse(prompt.contains("完成本文を代筆せず"))
+        assertFalse(prompt.contains("助言してほしい"))
         assertTrue(prompt.contains("記事タイトル:"))
         assertTrue(prompt.contains("Compose Navigationの設計判断"))
         assertTrue(prompt.contains("目次構成:"))
         assertTrue(prompt.contains("1. 設計方針（現在の章）"))
-        assertTrue(prompt.contains("ユーザー相談文:"))
+        assertTrue(prompt.contains("補足要望:"))
         assertTrue(prompt.contains("この章では何を書けばいいでしょうか？"))
         assertEquals("保存済み本文", section.content)
         assertEquals("編集中本文", section.draftContent)
     }
 
     @Test
-    fun generateSectionConsultation_truncatesOtherSectionBodyButKeepsTargetSectionBody() = runBlocking {
+    fun generateSectionPastePrompt_truncatesOtherSectionBodyButKeepsTargetSectionBody() {
         val targetDraft = "現在章の本文".repeat(120)
         val otherDraft = "他章の長い本文".repeat(80) + "末尾は含めない"
-        val client = FakeBlogSupportLlmClient("提案です。")
 
-        GenerateSectionConsultationUseCase(client)(
+        val prompt = GenerateSectionPastePromptUseCase()(
             consultationRequest(
                 section = section(content = "保存済み本文", draftContent = targetDraft),
                 outlineContext = listOf(
@@ -298,31 +298,22 @@ class LlmSupportUseCasesTest {
                     ),
                 ),
             ),
-        ).successValue()
+        )
 
-        val prompt = client.requests.single().prompt
         assertTrue(prompt.contains(targetDraft.take(2400)))
         assertTrue(prompt.contains(otherDraft.take(140)))
         assertFalse(prompt.contains("末尾は含めない"))
     }
 
     @Test
-    fun generateSectionConsultation_convertsClientFailure() = runBlocking {
-        val result = GenerateSectionConsultationUseCase(
-            FakeBlogSupportLlmClient(failure = LlmSupportFailure.ModelNotConfigured),
-        )(
-            consultationRequest(),
+    fun generateSectionPastePrompt_returnsRequestWhenUserQuestionIsBlank() {
+        val prompt = GenerateSectionPastePromptUseCase()(
+            consultationRequest(userQuestion = "   "),
         )
 
-        assertEquals(LlmSupportFailure.ModelNotConfigured, result.failureReason())
-    }
-
-    @Test(expected = CancellationException::class)
-    fun generateSectionConsultation_rethrowsCancellation() = runBlocking {
-        GenerateSectionConsultationUseCase(FakeBlogSupportLlmClient(cancel = true))(
-            consultationRequest(),
-        )
-        Unit
+        assertTrue(prompt.contains("補足要望:"))
+        assertTrue(prompt.contains("未入力"))
+        assertTrue(prompt.contains("現在の章の完成本文案を日本語で作成してください。"))
     }
 
     private fun section(
@@ -363,6 +354,7 @@ class LlmSupportUseCasesTest {
                 draftContent = "",
             ),
         ),
+        userQuestion: String = "この章では何を書けばいいでしょうか？",
     ): SectionConsultationRequest =
         SectionConsultationRequest(
             articleTitle = "Compose Navigationの設計判断",
@@ -376,7 +368,7 @@ class LlmSupportUseCasesTest {
                 isTarget = true,
             ),
             outlineContext = outlineContext,
-            userQuestion = "この章では何を書けばいいでしょうか？",
+            userQuestion = userQuestion,
         )
 
     private fun sectionContext(

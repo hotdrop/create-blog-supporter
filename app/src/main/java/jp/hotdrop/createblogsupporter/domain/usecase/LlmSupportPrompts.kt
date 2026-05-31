@@ -66,7 +66,7 @@ internal fun buildSectionSummaryPrompt(request: SectionSummaryRequest): String =
     この章節で扱う論点の概要案だけを日本語で返してください。完成本文の代筆は禁止です。
     """.trimIndent()
 
-internal fun buildSectionConsultationPrompt(request: SectionConsultationRequest): String {
+internal fun buildSectionPastePrompt(request: SectionConsultationRequest): String {
     val sortedSections = request.outlineContext.sortedBy { it.orderIndex }
     val targetIndex = request.targetSection.orderIndex
     val outline = sortedSections.joinToString(separator = "\n") { section ->
@@ -83,6 +83,10 @@ internal fun buildSectionConsultationPrompt(request: SectionConsultationRequest)
         .ifBlank { "他の章はまだありません。" }
 
     return """
+    ChatGPTへの依頼:
+    以下の文脈をもとに、「現在の章」の完成本文案をテックブログ向けの自然な文章として作成してください。
+    後から自分で修正する前提なので、元メモや既存文脈から外れた断定は避けてください。
+
     記事タイトル:
     ${request.articleTitle.normalizePromptText().ifBlank { "未設定" }.limitPromptText(MaxArticleTitleLength)}
 
@@ -103,12 +107,11 @@ internal fun buildSectionConsultationPrompt(request: SectionConsultationRequest)
     他章コンテキスト:
     $otherSections
 
-    ユーザー相談文:
-    ${request.userQuestion.normalizePromptText().limitPromptText(MaxUserQuestionLength)}
+    補足要望:
+    ${request.userQuestion.normalizePromptText().ifBlank { "未入力" }.limitPromptText(MaxUserQuestionLength)}
 
-    あなたはテックブログ執筆の相談相手です。ユーザー自身の言葉を尊重してください。
-    完成本文を確定するのではなく、現在の章で扱う観点、清書の方向性、足すとよい論点、読者に伝わりにくい箇所を提案してください。
-    回答は本文へ自動反映されません。ユーザーが判断しやすいように、日本語で簡潔に返してください。
+    出力してほしいもの:
+    現在の章の完成本文案を日本語で作成してください。
     """.trimIndent()
 }
 
